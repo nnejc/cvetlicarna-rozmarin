@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 1150" role="img" aria-label="Placeholder: poročni šopek">
+  <defs><linearGradient id="g2" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0" stop-color="#fbf6ef"/><stop offset="1" stop-color="#e7ded0"/>
+  </linearGradient></defs>
+  <rect width="800" height="1150" fill="url(#g2)"/>
+  <g fill="none" stroke="#9db29b" stroke-width="4" stroke-linecap="round" opacity="0.6">
+    <path d="M400 900c0-160 70-240 70-380"/><path d="M400 900c0-160-70-240-70-380"/>
+  </g>
+  <g fill="#ffffff" stroke="#d9cdbb" stroke-width="2">
+    <circle cx="400" cy="470" r="52"/><circle cx="320" cy="540" r="42"/><circle cx="480" cy="540" r="42"/>
+    <circle cx="380" cy="410" r="34"/><circle cx="440" cy="410" r="34"/>
+  </g>
+  <text x="400" y="1070" text-anchor="middle" font-family="Georgia, serif" font-size="30" fill="#3d3a34" opacity="0.55">Nadomestite s fotografijo</text>
+</svg>

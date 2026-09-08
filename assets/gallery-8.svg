@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 1080" role="img" aria-label="Placeholder: šopek suhih cvetov">
+  <defs><linearGradient id="g8" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0" stop-color="#f0e6d6"/><stop offset="1" stop-color="#cdae86"/>
+  </linearGradient></defs>
+  <rect width="800" height="1080" fill="url(#g8)"/>
+  <g fill="none" stroke="#8a7355" stroke-width="4" stroke-linecap="round" opacity="0.7">
+    <path d="M400 860c0-180 60-280 60-460"/><path d="M400 860c0-180-60-280-60-460"/>
+    <path d="M400 860c0-160 0-300 0-460"/><path d="M400 860c30-160 90-250 130-380"/>
+    <path d="M400 860c-30-160-90-250-130-380"/>
+  </g>
+  <g fill="#b98f6b" opacity="0.75">
+    <circle cx="400" cy="400" r="14"/><circle cx="460" cy="410" r="12"/><circle cx="340" cy="410" r="12"/>
+    <circle cx="530" cy="480" r="11"/><circle cx="270" cy="480" r="11"/>
+  </g>
+  <text x="400" y="1000" text-anchor="middle" font-family="Georgia, serif" font-size="30" fill="#3d3a34" opacity="0.6">Nadomestite s fotografijo</text>
+</svg>
