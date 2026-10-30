@@ -17,7 +17,7 @@
     slides.map(function (s, i) {
       return (
         '<article class="slide' + (i === 0 ? " is-active" : "") + '" role="group" aria-roledescription="slide" aria-label="' + (i + 1) + " od " + slides.length + '">' +
-        '<img class="slide__img" src="' + S.esc(s.image) + '" alt="' + S.esc(s.alt) + '" width="2000" height="1125"' +
+        '<img class="slide__img" src="' + S.esc(s.image) + '" alt="' + S.esc(s.alt) + '" width="2000" height="1131" style="--pos:' + S.esc(s.focus || "right center") + ";--pos-m:" + S.esc(s.focusMobile || "70% center") + '"' +
         (i === 0 ? ' fetchpriority="high"' : ' loading="lazy"') + ' decoding="async">' +
         '<div class="slide__text"><div class="slide__copy">' +
         "<h2>" + S.esc(s.title) + "</h2><p>" + S.esc(s.text) + "</p>" +
@@ -104,7 +104,6 @@
     e.preventDefault();
     setFilter(a.getAttribute("data-filter"), true);
     document.getElementById("products").scrollIntoView({ behavior: S.reduceMotion ? "auto" : "smooth" });
-    document.getElementById("header").classList.remove("nav-open");
   });
 
   var initial = new URLSearchParams(location.search).get("spol") || "all";

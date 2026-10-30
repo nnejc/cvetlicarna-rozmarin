@@ -18,12 +18,15 @@ in odprite `http://localhost:8000`.
 index.html       domača stran
 product.html     stran izdelka (product.html?id=01)
 checkout.html    blagajna (demo, brez pravega plačila)
+o-nas.html, dostava.html, vracila.html, kontakt.html,
+pogosta-vprasanja.html, pogoji.html, zasebnost.html   vsebinske strani
 css/styles.css   oblikovanje
 js/products.js   IZDELKI, CENE, AKCIJA, HERO SLIKE (tu urejate vsebino)
 js/shop.js       košarica, glava, noga, iskanje
 js/home.js       hero slider, filter, novičnik
 js/product.js    stran izdelka
 js/checkout.js   blagajna
+js/page.js       kontaktni obrazec (demo)
 images/          vse slike
 ```
 
@@ -52,6 +55,12 @@ Izdelek odstranite tako, da izbrišete njegov objekt.
 
 Vsak izdelek ima svoj `prices` objekt (cena v evrih za 30, 50 in 100 ml). Spremenite številke pri izdelku, ki ga želite.
 Cena na 100 ml se izračuna samodejno.
+Na karticah je prikazana najnižja cena ("od ..."), na strani izdelka pa cena izbrane velikosti.
+
+Pri akciji se cena zaokroži navzgor na najbližjih X,90 € (59 € → 41,90 €, 39 € → 27,90 €, 89 € → 62,90 €).
+Zaokroževanje je v funkciji `promoPrice` v `js/products.js` in velja povsod (kartice, stran izdelka, košarica, blagajna).
+
+Set vzorcev iz košarice je v `SAMPLE_SET` (cena, naziv, slika).
 
 ### Akcija (Black Friday)
 
@@ -86,11 +95,18 @@ V `js/products.js` poiščite `HERO_SLIDES`. Vsak diapozitiv je objekt:
 Vrstni red v seznamu je vrstni red prikaza. Diapozitiv z `promoOnly: true` se prikaže le, ko je akcija aktivna.
 Slike naj bodo razmerja 16:9 s praznim prostorom na levi, kjer je besedilo.
 
+Za vsak diapozitiv lahko nastavite tudi `focus` (kateri del slike ostane viden na računalniku) in `focusMobile` (na telefonu).
+
 ## Slike
 
-Pričakovane datoteke v `images/`: `logo-black.svg`, `hero-blackfriday.jpg`, `hero-woman.jpg`, `hero-man.jpg`,
+Datoteke v `images/`: `logo-black.svg`, `favicon.svg`, `favicon-32.png`, `hero-blackfriday.jpg`, `hero-woman.jpg`, `hero-man.jpg`,
 `product-01.jpg` … `product-06.jpg`, `travertine.jpg`, `sizes.jpg`.
-Če `logo-black.svg` manjka, se namesto logotipa prikaže besedilo AURELLE, če manjka `travertine.jpg`, se slika preprosto ne prikaže.
+
+Neobvezne slike (če datoteke ni, se prostor tiho izpusti):
+- `about.jpg`: slika v razdelku O NAS (brez nje se uporabi izrez iz `hero-woman.jpg`).
+- `product-0X-lifestyle.jpg` (npr. `product-02-lifestyle.jpg`): slika ob prehodu z miško na kartici in v galeriji izdelka.
+
+Ker brskalnik datoteke, ki je ni, javi kot 404, se lahko v konzoli ob prvem obisku pojavi nekaj takih opozoril za manjkajoče neobvezne slike. To ni napaka.
 
 ## Opombe
 

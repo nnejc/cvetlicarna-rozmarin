@@ -1,5 +1,5 @@
 /*
- * AURELLE – shared logic: formatting, prices, cart, header/footer, cart drawer, search.
+ * AURELLE – shared logic: formatting, prices, cart, header/footer, cart drawer, search, mobile menu.
  * Exposes everything the page scripts need as window.Shop.
  */
 (function () {
@@ -9,6 +9,7 @@
   var CART_KEY = "aurelle-cart-v1";
   var reduceMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   var GENDER_LABEL = { zanjo: "Zanjo", zanj: "Zanj", unisex: "Unisex" };
+  var cartListeners = [];
 
   /* ---------- helpers ---------- */
 
@@ -35,12 +36,37 @@
     });
   }
 
+  // Resolves true if an optional image exists. The answer is cached for the session,
+  // so a missing file is requested at most once.
+  var probeCache = {};
+  try { probeCache = JSON.parse(sessionStorage.getItem("aurelle-probe")) || {}; } catch (e) { probeCache = {}; }
+  var probePending = {};
+  function probe(src) {
+    if (src in probeCache) return Promise.resolve(probeCache[src]);
+    if (probePending[src]) return probePending[src];
+    probePending[src] = new Promise(function (resolve) {
+      var img = new Image();
+      img.onload = img.onerror = function () {
+        var ok = img.naturalWidth > 0;
+        probeCache[src] = ok;
+        try { sessionStorage.setItem("aurelle-probe", JSON.stringify(probeCache)); } catch (e) { /* ignore */ }
+        resolve(ok);
+      };
+      img.src = src;
+    });
+    return probePending[src];
+  }
+
+  function lifestyleSrc(p) {
+    return "images/product-" + p.id + "-lifestyle.jpg";
+  }
+
   /* ---------- prices ---------- */
 
   function price(p, size) {
     var base = p.prices[size];
     var promo = !!(PROMO && PROMO.active);
-    var final = promo ? Math.round(base * (100 - PROMO.percent)) / 100 : base;
+    var final = promo ? promoPrice(base) : base;
     return { base: base, final: final, promo: promo, per100: (final / size) * 100 };
   }
 
@@ -53,6 +79,14 @@
       '<div class="price__row">' + old + '<span class="price__now">' + money(pr.final) + "</span></div>" +
       '<div class="price__unit">' + money(pr.per100) + " / 100" + NBSP + "ml</div>"
     );
+  }
+
+  // Lowest price of a product ("od ...") shown on cards.
+  function fromPriceHTML(p) {
+    var pr = price(p, SIZES[0]);
+    var html = '<span class="card__now">od' + NBSP + money(pr.final) + "</span>";
+    if (pr.promo) html += ' <s class="card__old"><span class="sr-only">Redna cena </span>od' + NBSP + money(pr.base) + "</s>";
+    return html;
   }
 
   // Fades the old content out, swaps it and fades it back in.
@@ -91,35 +125,33 @@
   /* ---------- product card ---------- */
 
   function createCard(p) {
-    var size = DEFAULT_SIZE;
-    var pr = price(p, size);
     var el = document.createElement("article");
     el.className = "card";
     var url = "product.html?id=" + p.id;
-    var second = p.secondImage
-      ? '<img class="card__img card__img--alt" src="' + esc(p.secondImage) + '" alt="" loading="lazy" decoding="async" onerror="this.remove()">'
-      : "";
-    var tag = pr.promo ? '<span class="tag">−' + PROMO.percent + NBSP + "%</span>" : "";
+    var altSrc = p.secondImage || lifestyleSrc(p);
     el.innerHTML =
-      '<a class="card__media media' + (p.secondImage ? " has-alt" : "") + '" href="' + url + '" tabindex="-1" aria-hidden="true">' +
+      '<div class="card__media media">' +
+      '<a class="card__link" href="' + url + '" tabindex="-1" aria-hidden="true">' +
       '<img class="card__img" src="' + esc(p.image) + '" alt="" width="800" height="800" loading="lazy" decoding="async">' +
-      second + tag + "</a>" +
+      "</a>" +
+      '<button type="button" class="quick" aria-label="Hitri nakup: ' + esc(p.name) + ", " + DEFAULT_SIZE + ' ml">Hitri nakup · <span class="lc">' + DEFAULT_SIZE + NBSP + "ml</span></button>" +
+      "</div>" +
       '<div class="card__body">' +
       '<p class="eyebrow">' + esc(p.family) + "</p>" +
       '<h3 class="card__name"><a href="' + url + '">' + esc(p.name) + "</a></h3>" +
       '<p class="card__notes">' + firstNotes(p).map(esc).join(" · ") + "</p>" +
-      sizesHTML(size, p.name) +
-      '<div class="price" aria-live="polite">' + priceHTML(p, size) + "</div>" +
-      '<button type="button" class="btn btn--full">V košarico</button>' +
+      '<p class="card__price">' + fromPriceHTML(p) + "</p>" +
       "</div>";
-
-    // The image link is only a visual duplicate of the name link, so hide it from AT.
-    var priceEl = el.querySelector(".price");
-    bindSizes(el.querySelector(".sizes"), function (s) {
-      size = s;
-      swap(priceEl, priceHTML(p, size));
+    el.querySelector(".quick").addEventListener("click", function () { addItem(p.id, DEFAULT_SIZE, 1); });
+    // Hover image: secondImage, or the optional lifestyle image when that file exists.
+    probe(altSrc).then(function (ok) {
+      if (!ok) return;
+      var img = new Image();
+      img.className = "card__img card__img--alt";
+      img.alt = ""; img.width = 800; img.height = 800; img.loading = "lazy"; img.decoding = "async";
+      img.src = altSrc;
+      el.querySelector(".card__link").appendChild(img);
     });
-    el.querySelector(".btn").addEventListener("click", function () { addItem(p.id, size, 1); });
     return el;
   }
 
@@ -132,6 +164,7 @@
       var raw = JSON.parse(localStorage.getItem(CART_KEY));
       if (!Array.isArray(raw)) return [];
       return raw.filter(function (l) {
+        if (l.id === SAMPLE_SET.id) return l.qty > 0;
         return find(l.id) && SIZES.indexOf(l.size) !== -1 && l.qty > 0;
       });
     } catch (e) { return []; }
@@ -142,11 +175,23 @@
     renderCart();
   }
 
+  // Cart lines with everything needed to display them.
   function lines() {
     return cart.map(function (l) {
-      var p = find(l.id);
-      var pr = price(p, l.size);
-      return { p: p, size: l.size, qty: l.qty, unit: pr.final, total: Math.round(pr.final * l.qty * 100) / 100 };
+      var isSet = l.id === SAMPLE_SET.id;
+      var p = isSet ? SAMPLE_SET : find(l.id);
+      var unit = isSet ? SAMPLE_SET.price : price(p, l.size).final;
+      return {
+        id: l.id,
+        size: l.size,
+        qty: l.qty,
+        p: p,
+        isSet: isSet,
+        label: isSet ? SAMPLE_SET.detail.replace(" ml", NBSP + "ml") : l.size + NBSP + "ml",
+        href: isSet ? null : "product.html?id=" + l.id,
+        unit: unit,
+        total: Math.round(unit * l.qty * 100) / 100
+      };
     });
   }
 
@@ -156,6 +201,10 @@
 
   function count() {
     return cart.reduce(function (a, l) { return a + l.qty; }, 0);
+  }
+
+  function hasSet() {
+    return cart.some(function (l) { return l.id === SAMPLE_SET.id; });
   }
 
   function addItem(id, size, qty) {
@@ -193,41 +242,62 @@
     );
   }
 
-  /* ---------- chrome: header, search, drawer, footer ---------- */
+  /* ---------- chrome: announcement, header, mobile menu, drawer, footer ---------- */
 
-  var drawer, overlay, lastFocus;
+  var drawer, overlay, mmenu, lastFocus;
 
-  function logoHTML(cls) {
-    // If the logo file is missing, a typographic wordmark takes its place.
-    return (
-      '<img class="' + cls + '" src="images/logo-black.svg" alt="AURELLE" height="30" ' +
-      "onerror=\"var s=document.createElement('span');s.className='wordmark';s.textContent='AURELLE';this.replaceWith(s)\">"
-    );
+  function logoHTML(cls, h) {
+    return '<img class="' + cls + '" src="images/logo-black.svg" alt="AURELLE" width="' + Math.round(h * 8.34) + '" height="' + h + '">';
+  }
+
+  function announceText() {
+    var free = "Brezplačna dostava nad 60" + NBSP + "€";
+    if (PROMO && PROMO.active) {
+      return PROMO.label + " −" + PROMO.percent + NBSP + "% na vse dišave do " + (PROMO.until || "1. 12.").replace(/ /g, NBSP) + " · " + free;
+    }
+    return free + " · Vzorec 2" + NBSP + "ml ob vsakem nakupu";
+  }
+
+  var NAV_LINKS = [
+    ["Zanjo", "index.html?spol=zanjo#products", "zanjo"],
+    ["Zanj", "index.html?spol=zanj#products", "zanj"],
+    ["Vse dišave", "index.html#products", "all"],
+    ["O nas", "o-nas.html", null]
+  ];
+
+  function navLinks(extraClass) {
+    return NAV_LINKS.map(function (l) {
+      return '<a href="' + l[1] + '"' + (l[2] ? ' data-filter="' + l[2] + '"' : "") + (extraClass ? ' class="' + extraClass + '"' : "") + ">" + l[0] + "</a>";
+    }).join("");
   }
 
   function buildChrome() {
     var head =
       '<a class="skip" href="#main">Preskoči na vsebino</a>' +
-      '<div class="announce"><p>Brezplačna dostava nad 60' + NBSP + "€ · Vzorec 2" + NBSP + "ml ob vsakem nakupu</p></div>" +
+      '<div class="announce"><p class="announce__text" id="announce"><span class="announce__run">' + announceText() + "</span></p></div>" +
       '<header class="header" id="header"><div class="header__in">' +
       '<div class="header__left">' +
-      '<button type="button" class="nav-toggle" aria-expanded="false" aria-controls="main-nav">Meni</button>' +
-      '<nav class="nav" id="main-nav" aria-label="Glavna navigacija">' +
-      '<a href="index.html?spol=zanjo#products" data-filter="zanjo">Zanjo</a>' +
-      '<a href="index.html?spol=zanj#products" data-filter="zanj">Zanj</a>' +
-      '<a href="index.html#products" data-filter="all">Vse dišave</a>' +
-      "</nav></div>" +
-      '<a class="header__logo" href="index.html" aria-label="AURELLE, domov">' + logoHTML("logo") + "</a>" +
+      '<button type="button" class="hbtn nav-toggle" id="menu-open" aria-expanded="false" aria-controls="mobile-menu" aria-label="Meni">' +
+      '<svg width="22" height="14" viewBox="0 0 22 14" fill="none" stroke="currentColor" stroke-width="1.2" aria-hidden="true"><path d="M0 1h22M0 7h22M0 13h22"/></svg></button>' +
+      '<nav class="nav" id="main-nav" aria-label="Glavna navigacija">' + navLinks() + "</nav></div>" +
+      '<a class="header__logo" href="index.html" aria-label="AURELLE, domov">' + logoHTML("logo", 28) + "</a>" +
       '<div class="header__right">' +
       '<button type="button" class="hbtn" id="search-toggle" aria-expanded="false" aria-controls="search-panel" aria-label="Iskanje">' +
-      '<svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.2" aria-hidden="true"><circle cx="7.5" cy="7.5" r="5.5"/><path d="M11.6 11.6 16.5 16.5"/></svg></button>' +
-      '<button type="button" class="hbtn hbtn--text" id="cart-toggle" aria-controls="cart" aria-expanded="false">Košarica <span id="cart-count">(0)</span></button>' +
-      "</div></div>" +
+      '<svg width="19" height="19" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.2" aria-hidden="true"><circle cx="7.5" cy="7.5" r="5.5"/><path d="M11.6 11.6 16.5 16.5"/></svg></button>' +
+      '<button type="button" class="hbtn hbtn--cart" id="cart-toggle" aria-controls="cart" aria-expanded="false">' +
+      '<span class="cart-label">Košarica <span id="cart-count">(0)</span></span>' +
+      '<span class="cart-icon"><svg width="19" height="20" viewBox="0 0 19 20" fill="none" stroke="currentColor" stroke-width="1.2" aria-hidden="true"><path d="M2.5 6.5h14l1 12.5h-16z"/><path d="M6 9V5a3.5 3.5 0 0 1 7 0v4"/></svg>' +
+      '<span class="cart-badge" id="cart-badge" hidden>0</span><span class="sr-only">Košarica</span></span>' +
+      "</button></div></div>" +
       '<div class="search" id="search-panel" hidden><div class="search__in">' +
       '<label class="sr-only" for="search-input">Išči dišave</label>' +
       '<input id="search-input" type="search" placeholder="Išči po imenu, noti ali družini" autocomplete="off">' +
       '<ul class="search__results" id="search-results"></ul></div></div>' +
-      "</header>";
+      "</header>" +
+      '<div class="mmenu" id="mobile-menu" role="dialog" aria-modal="true" aria-label="Meni" hidden>' +
+      '<div class="mmenu__top">' + logoHTML("logo", 22) +
+      '<button type="button" class="link-btn" id="menu-close">Zapri</button></div>' +
+      '<nav class="mmenu__nav" aria-label="Mobilna navigacija">' + navLinks() + "</nav></div>";
 
     var cartEl =
       '<div class="overlay" id="overlay"></div>' +
@@ -241,7 +311,7 @@
     var foot =
       '<footer class="footer"><div class="wrap">' +
       '<div class="footer__grid">' +
-      '<div class="footer__brand">' + logoHTML("logo") +
+      '<div class="footer__brand">' + logoHTML("logo", 22) +
       "<p>Eau de Parfum, izdelano v Sloveniji.</p></div>" +
       '<nav aria-label="Trgovina"><h2>Trgovina</h2><ul>' +
       '<li><a href="index.html#products" data-filter="all">Vse dišave</a></li>' +
@@ -249,9 +319,10 @@
       '<li><a href="index.html?spol=zanj#products" data-filter="zanj">Zanj</a></li>' +
       '<li><a href="index.html?spol=unisex#products" data-filter="unisex">Unisex</a></li></ul></nav>' +
       '<nav aria-label="Pomoč"><h2>Pomoč</h2><ul>' +
-      "<li><a href=\"#\">Dostava</a></li><li><a href=\"#\">Vračila</a></li><li><a href=\"#\">Pogosta vprašanja</a></li><li><a href=\"#\">Kontakt</a></li></ul></nav>" +
+      '<li><a href="dostava.html">Dostava</a></li><li><a href="vracila.html">Vračila</a></li>' +
+      '<li><a href="pogosta-vprasanja.html">Pogosta vprašanja</a></li><li><a href="kontakt.html">Kontakt</a></li></ul></nav>' +
       '<nav aria-label="AURELLE"><h2>AURELLE</h2><ul>' +
-      "<li><a href=\"#\">O nas</a></li><li><a href=\"#\">Splošni pogoji</a></li><li><a href=\"#\">Zasebnost</a></li></ul></nav>" +
+      '<li><a href="o-nas.html">O nas</a></li><li><a href="pogoji.html">Splošni pogoji</a></li><li><a href="zasebnost.html">Zasebnost</a></li></ul></nav>' +
       "</div>" +
       '<p class="footer__copy">© 2026 AURELLE</p>' +
       "</div></footer>";
@@ -260,44 +331,71 @@
     document.body.insertAdjacentHTML("beforeend", cartEl + foot);
   }
 
-  function renderCart() {
-    var countEl = document.getElementById("cart-count");
-    if (countEl) countEl.textContent = "(" + count() + ")";
-    var body = document.getElementById("cart-lines");
-    if (!body) return;
-    var ls = lines();
-    var sub = subtotal();
-
-    document.getElementById("cart-ship").innerHTML = ls.length ? shippingProgressHTML(sub) : "";
-
-    if (!ls.length) {
-      body.innerHTML = '<p class="drawer__empty">Košarica je prazna.</p>';
-      document.getElementById("cart-foot").innerHTML =
-        '<a class="btn btn--outline btn--full" href="index.html#products" data-close-cart>Nadaljuj z nakupom</a>';
-      return;
+  // Keeps the announcement on one line: marquee when it does not fit, ellipsis with reduced motion.
+  function fitAnnounce() {
+    var box = document.getElementById("announce");
+    if (!box) return;
+    var run = box.querySelector(".announce__run");
+    box.classList.remove("is-marquee");
+    box.innerHTML = '<span class="announce__run">' + announceText() + "</span>";
+    run = box.querySelector(".announce__run");
+    if (reduceMotion) return;
+    if (box.scrollWidth > box.clientWidth + 1) {
+      box.classList.add("is-marquee");
+      box.innerHTML =
+        '<span class="announce__track">' +
+        '<span class="announce__run">' + announceText() + "</span>" +
+        '<span class="announce__run" aria-hidden="true">' + announceText() + "</span></span>";
     }
+  }
 
-    body.innerHTML = '<ul class="lines">' + ls.map(function (l) {
-      return (
-        '<li class="line" data-id="' + l.p.id + '" data-size="' + l.size + '">' +
-        '<a class="line__media media" href="product.html?id=' + l.p.id + '" tabindex="-1" aria-hidden="true"><img src="' + esc(l.p.image) + '" alt="" loading="lazy"></a>' +
-        '<div class="line__info">' +
-        '<a class="line__name" href="product.html?id=' + l.p.id + '">' + esc(l.p.name) + "</a>" +
-        '<p class="muted">' + l.size + NBSP + "ml · " + money(l.unit) + "</p>" +
-        '<div class="line__ctrl">' +
-        '<div class="qty" role="group" aria-label="Količina">' +
-        '<button type="button" data-act="dec" aria-label="Zmanjšaj količino">−</button>' +
-        "<span>" + l.qty + "</span>" +
-        '<button type="button" data-act="inc" aria-label="Povečaj količino">+</button></div>' +
-        '<button type="button" class="link-btn" data-act="rm">Odstrani</button></div></div>' +
-        '<p class="line__total">' + money(l.total) + "</p></li>"
-      );
-    }).join("") + "</ul>";
+  function renderCart() {
+    var n = count();
+    var countEl = document.getElementById("cart-count");
+    if (countEl) countEl.textContent = "(" + n + ")";
+    var badge = document.getElementById("cart-badge");
+    if (badge) { badge.textContent = n; badge.hidden = n === 0; }
+    var body = document.getElementById("cart-lines");
+    if (body) {
+      var ls = lines();
+      var sub = subtotal();
+      document.getElementById("cart-ship").innerHTML = ls.length ? shippingProgressHTML(sub) : "";
 
-    document.getElementById("cart-foot").innerHTML =
-      '<div class="sum"><span>Vmesni seštevek</span><strong>' + money(sub) + "</strong></div>" +
-      '<p class="muted small">Vzorec 2' + NBSP + "ml je dodan brezplačno. Dostava se izračuna na blagajni.</p>" +
-      '<a class="btn btn--full" href="checkout.html">Na blagajno</a>';
+      if (!ls.length) {
+        body.innerHTML = '<p class="drawer__empty">Košarica je prazna.</p>';
+        document.getElementById("cart-foot").innerHTML =
+          '<a class="btn btn--outline btn--full" href="index.html#products" data-close-cart>Nadaljuj z nakupom</a>';
+      } else {
+        body.innerHTML = '<ul class="lines">' + ls.map(function (l) {
+          var name = l.href
+            ? '<a class="line__name" href="' + l.href + '">' + esc(l.p.name) + "</a>"
+            : '<p class="line__name">' + esc(l.p.name) + "</p>";
+          return (
+            '<li class="line" data-id="' + l.id + '" data-size="' + l.size + '">' +
+            '<div class="line__media media"><img src="' + esc(l.p.image) + '" alt="" loading="lazy"></div>' +
+            '<div class="line__info">' + name +
+            '<p class="muted">' + l.label + " · " + money(l.unit) + "</p>" +
+            '<div class="line__ctrl">' +
+            '<div class="qty" role="group" aria-label="Količina">' +
+            '<button type="button" data-act="dec" aria-label="Zmanjšaj količino">−</button>' +
+            "<span>" + l.qty + "</span>" +
+            '<button type="button" data-act="inc" aria-label="Povečaj količino">+</button></div>' +
+            '<button type="button" class="link-btn" data-act="rm">Odstrani</button></div></div>' +
+            '<p class="line__total">' + money(l.total) + "</p></li>"
+          );
+        }).join("") + "</ul>" +
+        (hasSet() ? "" :
+          '<div class="upsell"><div class="upsell__media media"><img src="' + esc(SAMPLE_SET.image) + '" alt="" loading="lazy"></div>' +
+          '<p>Dodaj set vzorcev ' + SAMPLE_SET.detail.replace(" ml", NBSP + "ml") + " za " + money(SAMPLE_SET.price) + "</p>" +
+          '<button type="button" class="btn btn--outline btn--sm" data-add-set>Dodaj</button></div>');
+
+        document.getElementById("cart-foot").innerHTML =
+          '<div class="sum"><span>Vmesni seštevek</span><strong>' + money(sub) + "</strong></div>" +
+          '<p class="muted small">Vzorec 2' + NBSP + "ml je dodan brezplačno. Dostava se izračuna na blagajni.</p>" +
+          '<a class="btn btn--full" href="checkout.html">Na blagajno</a>';
+      }
+    }
+    cartListeners.forEach(function (fn) { fn(); });
   }
 
   function openCart() {
@@ -318,6 +416,16 @@
     document.getElementById("cart-toggle").setAttribute("aria-expanded", "false");
     document.body.classList.remove("no-scroll");
     if (lastFocus && lastFocus.focus) lastFocus.focus();
+  }
+
+  function setMenu(open) {
+    var opener = document.getElementById("menu-open");
+    mmenu.hidden = !open;
+    // next frame so the opacity transition runs
+    requestAnimationFrame(function () { mmenu.classList.toggle("is-open", open); });
+    opener.setAttribute("aria-expanded", open ? "true" : "false");
+    document.body.classList.toggle("no-scroll", open);
+    if (open) document.getElementById("menu-close").focus(); else opener.focus();
   }
 
   function initSearch() {
@@ -357,6 +465,7 @@
     buildChrome();
     drawer = document.getElementById("cart");
     overlay = document.getElementById("overlay");
+    mmenu = document.getElementById("mobile-menu");
 
     document.getElementById("cart-toggle").addEventListener("click", openCart);
     document.getElementById("cart-close").addEventListener("click", closeCart);
@@ -364,6 +473,7 @@
 
     drawer.addEventListener("click", function (e) {
       if (e.target.closest("[data-close-cart]")) { closeCart(); return; }
+      if (e.target.closest("[data-add-set]")) { addItem(SAMPLE_SET.id, 0, 1); return; }
       var btn = e.target.closest("[data-act]");
       if (!btn) return;
       var line = btn.closest(".line");
@@ -376,6 +486,7 @@
     });
 
     document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape" && !mmenu.hidden) { setMenu(false); return; }
       if (!drawer.classList.contains("is-open")) return;
       if (e.key === "Escape") { closeCart(); return; }
       if (e.key !== "Tab") return;
@@ -387,10 +498,22 @@
       else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
     });
 
-    var navToggle = document.querySelector(".nav-toggle");
-    navToggle.addEventListener("click", function () {
-      var open = document.getElementById("header").classList.toggle("nav-open");
-      navToggle.setAttribute("aria-expanded", open ? "true" : "false");
+    document.getElementById("menu-open").addEventListener("click", function () { setMenu(true); });
+    document.getElementById("menu-close").addEventListener("click", function () { setMenu(false); });
+    mmenu.addEventListener("click", function (e) {
+      if (e.target.closest("a")) {
+        // close without moving focus: the link navigates or scrolls on its own
+        mmenu.hidden = true; mmenu.classList.remove("is-open");
+        document.getElementById("menu-open").setAttribute("aria-expanded", "false");
+        document.body.classList.remove("no-scroll");
+      }
+    });
+    window.addEventListener("resize", function () {
+      if (window.innerWidth > 900 && !mmenu.hidden) {
+        mmenu.hidden = true; mmenu.classList.remove("is-open"); document.body.classList.remove("no-scroll");
+      }
+      clearTimeout(initChrome._t);
+      initChrome._t = setTimeout(fitAnnounce, 150);
     });
 
     window.addEventListener("storage", function (e) {
@@ -399,9 +522,20 @@
 
     initSearch();
     renderCart();
+    fitAnnounce();
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitAnnounce);
   }
 
   initChrome();
+
+  // about.jpg is optional: the markup defaults to a crop of hero-woman.jpg.
+  var aboutImgs = document.querySelectorAll("img[data-about]");
+  if (aboutImgs.length) {
+    probe("images/about.jpg").then(function (ok) {
+      if (!ok) return;
+      aboutImgs.forEach(function (img) { img.src = "images/about.jpg"; img.classList.remove("is-crop"); });
+    });
+  }
 
   window.Shop = {
     NBSP: NBSP,
@@ -410,6 +544,8 @@
     esc: esc,
     money: money,
     find: find,
+    probe: probe,
+    lifestyleSrc: lifestyleSrc,
     price: price,
     priceHTML: priceHTML,
     swap: swap,
@@ -421,10 +557,6 @@
     lines: lines,
     subtotal: subtotal,
     shippingProgressHTML: shippingProgressHTML,
-    onCartChange: function (fn) {
-      var orig = renderCart;
-      renderCart = function () { orig(); fn(); };
-      fn();
-    }
+    onCartChange: function (fn) { cartListeners.push(fn); }
   };
 })();

@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="sl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Kontakt – AURELLE</title>
+  <meta name="description" content="Kontaktirajte AURELLE.">
+  <link rel="icon" href="images/favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="images/favicon-32.png" sizes="32x32" type="image/png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:wght@400;500;600&family=Figtree:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body class="page-doc">
+
+<main id="main" class="wrap">
+  <article class="doc">
+    <h1 class="doc__title">Kontakt</h1>
+    <div class="doc__split doc__split--form">
+      <div class="doc__body">
+        <p>Vprašanja o dišavah, naročilih ali vračilih pošljite na info@aurelle.si. Odgovorimo v enem delovnem dnevu.</p>
+        <p class="facts-line"><span class="muted">E-pošta</span><br>info@aurelle.si</p>
+      </div>
+      <form class="co__form contact" id="contact" data-demo novalidate>
+        <div class="fields">
+          <div class="field"><label for="c-name">Ime</label><input id="c-name" name="name" type="text" autocomplete="name" aria-describedby="err-c-name"><p class="field__error" id="err-c-name" hidden></p></div>
+          <div class="field"><label for="c-email">E-poštni naslov</label><input id="c-email" name="email" type="email" autocomplete="email" aria-describedby="err-c-email"><p class="field__error" id="err-c-email" hidden></p></div>
+          <div class="field field--wide"><label for="c-msg">Sporočilo</label><textarea id="c-msg" name="message" rows="6" aria-describedby="err-c-msg"></textarea><p class="field__error" id="err-c-msg" hidden></p></div>
+        </div>
+        <button type="submit" class="btn">Pošlji</button>
+        <p class="newsletter__msg" id="contact-msg" role="status"></p>
+      </form>
+    </div>
+  </article>
+</main>
+
+<script src="js/products.js"></script>
+<script src="js/shop.js"></script>
+<script src="js/page.js"></script>
+</body>
+</html>

@@ -5,9 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>AURELLE – Eau de Parfum, izdelano v Sloveniji</title>
   <meta name="description" content="AURELLE: dišave Eau de Parfum z 18 % dišavnih olj, izdelane v Sloveniji. Ena dišava, tri velikosti.">
+  <link rel="icon" href="images/favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="images/favicon-32.png" sizes="32x32" type="image/png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:wght@400;500&family=Figtree:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:wght@400;500;600&family=Figtree:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/styles.css">
 </head>
 <body class="page-home">
@@ -49,28 +51,16 @@
     </div>
   </section>
 
-  <section class="pyramid wrap" aria-labelledby="pyramid-title">
-    <div class="pyramid__intro">
-      <h2 id="pyramid-title">Piramida not</h2>
-      <p class="muted">Dišava se na koži razvija v treh korakih.</p>
+  <section class="split split--reverse" aria-labelledby="about-title">
+    <div class="split__text">
+      <h2 id="about-title">O nas</h2>
+      <p>AURELLE je slovenska znamka dišav. Vsako dišavo razvijamo v manjših serijah, z 18 % dišavnih olj, da na koži zdrži ves dan. Verjamemo, da luksuz ni v ceni, ampak v kakovosti in v občutku, ki ga pusti.</p>
+      <a class="btn btn--outline" href="o-nas.html">Več o nas</a>
     </div>
-    <ol class="pyramid__list">
-      <li>
-        <h3>Vrh</h3>
-        <p class="pyramid__time">0–15 min</p>
-        <p>Prvi vtis. Lahke, sveže note, ki se odprejo najprej in prve tudi izzvenijo.</p>
-      </li>
-      <li>
-        <h3>Srce</h3>
-        <p class="pyramid__time">15 min – 3 h</p>
-        <p>Jedro dišave. Pokaže se, ko se vrh umiri, in določa njen značaj.</p>
-      </li>
-      <li>
-        <h3>Baza</h3>
-        <p class="pyramid__time">3 h in več</p>
-        <p>Sled na koži. Težje, tople note, ki ostanejo še dolgo po nanosu.</p>
-      </li>
-    </ol>
+    <div class="split__media split__media--portrait media">
+      <!-- about.jpg is optional: shop.js swaps it in when the file exists -->
+      <img class="is-crop" data-about src="images/hero-woman.jpg" alt="Steklenica dišave AURELLE v rokah" loading="lazy" decoding="async" width="2000" height="1131">
+    </div>
   </section>
 
   <section class="newsletter" aria-labelledby="news-title">
