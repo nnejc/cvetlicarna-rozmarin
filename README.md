@@ -61,6 +61,10 @@ Z 10 izdelki in 2 ploščicama je mreža polna (3 vrstice po 4). Če dodate ali 
 
 "Morda ti bo všeč" na strani izdelka prikaže 4 dišave: najprej iste vrste (zanjo / zanj / unisex), nato druge.
 
+### Družbena omrežja
+
+Povezave za ikone Instagram, TikTok in Facebook v nogi so v `SOCIAL` na vrhu `js/products.js` (zdaj `#`).
+
 ## Kako spremeniti cene
 
 Vsak izdelek ima svoj `prices` objekt (cena v evrih za 30, 50 in 100 ml). Spremenite številke pri izdelku, ki ga želite.

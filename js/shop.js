@@ -36,8 +36,7 @@
     });
   }
 
-  // Resolves true if an optional image exists. The answer is cached for the session,
-  // so a missing file is requested at most once.
+  // Resolves true if an optional image exists. Positive answers are cached for the session.
   var probeCache = {};
   try { probeCache = JSON.parse(sessionStorage.getItem("aurelle-probe")) || {}; } catch (e) { probeCache = {}; }
   var probePending = {};
@@ -48,8 +47,11 @@
       var img = new Image();
       img.onload = img.onerror = function () {
         var ok = img.naturalWidth > 0;
-        probeCache[src] = ok;
-        try { sessionStorage.setItem("aurelle-probe", JSON.stringify(probeCache)); } catch (e) { /* ignore */ }
+        // Only found images are cached; a missing file is checked again next time.
+        if (ok) {
+          probeCache[src] = true;
+          try { sessionStorage.setItem("aurelle-probe", JSON.stringify(probeCache)); } catch (e) { /* ignore */ }
+        }
         resolve(ok);
       };
       img.src = src;
@@ -280,6 +282,20 @@
     }).join("");
   }
 
+  // Footer social icons: inline SVG, URLs come from SOCIAL in products.js.
+  var SOCIAL_ICONS = [
+    ["instagram", "AURELLE na Instagramu", '<rect x="3.5" y="3.5" width="17" height="17" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.2" cy="6.8" r="0.5" fill="currentColor"/>'],
+    ["tiktok", "AURELLE na TikToku", '<path d="M14 3.5v11.2a3.8 3.8 0 1 1-3.8-3.8"/><path d="M14 3.5c.3 2.6 2 4.4 4.8 4.6"/>'],
+    ["facebook", "AURELLE na Facebooku", '<path d="M14 21v-8h2.8l.6-3.2H14V8c0-.9.4-1.5 1.6-1.5h1.8V3.7c-.4-.1-1.5-.2-2.5-.2-2.5 0-4.2 1.5-4.2 4.3v2H8.2V13H11v8z"/>']
+  ];
+
+  function socialHTML() {
+    return '<div class="social">' + SOCIAL_ICONS.map(function (i) {
+      return '<a href="' + esc(SOCIAL[i[0]] || "#") + '" target="_blank" rel="noopener" aria-label="' + i[1] + '">' +
+        '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true">' + i[2] + "</svg></a>";
+    }).join("") + "</div>";
+  }
+
   function buildChrome() {
     var head =
       '<a class="skip" href="#main">Preskoči na vsebino</a>' +
@@ -321,7 +337,7 @@
       '<footer class="footer"><div class="wrap">' +
       '<div class="footer__grid">' +
       '<div class="footer__brand">' + logoHTML("logo", 22) +
-      "<p>Eau de Parfum, izdelano v Sloveniji.</p></div>" +
+      "<p>Eau de Parfum, izdelano v Sloveniji.</p>" + socialHTML() + "</div>" +
       '<nav aria-label="Trgovina"><h2>Trgovina</h2><ul>' +
       '<li><a href="index.html#products" data-filter="all">Vse dišave</a></li>' +
       '<li><a href="index.html?spol=zanjo#products" data-filter="zanjo">Zanjo</a></li>' +
@@ -332,7 +348,7 @@
       '<li><a href="pogosta-vprasanja.html">Pogosta vprašanja</a></li><li><a href="kontakt.html">Kontakt</a></li></ul></nav>' +
       '<nav aria-label="AURELLE"><h2>AURELLE</h2><ul>' +
       '<li><a href="o-nas.html">O nas</a></li><li><a href="pogoji.html">Splošni pogoji</a></li><li><a href="zasebnost.html">Zasebnost</a></li>' +
-      '<li><a href="#">Instagram</a></li><li><a href="#">TikTok</a></li></ul></nav>' +
+      '</ul></nav>' +
       "</div>" +
       '<div class="footer__meta">' +
       '<p class="footer__pay">Visa · Mastercard · PayPal · Po povzetju · Bančno nakazilo</p>' +

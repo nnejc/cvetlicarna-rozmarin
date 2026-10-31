@@ -3,6 +3,9 @@
  * Everything that is meant to be edited by hand lives in this file.
  */
 
+// Social profile links shown as icons in the footer. Replace "#" with the real URLs.
+var SOCIAL = { instagram: "#", tiktok: "#", facebook: "#" };
+
 // Global promotion. Set active to false to show regular prices everywhere.
 var PROMO = { active: true, label: "BLACK FRIDAY", percent: 30, until: "1. 12." };
 

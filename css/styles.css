@@ -312,6 +312,9 @@ h2 { font-size: clamp(24px, 2.4vw, 34px); }
 .footer__grid { display: grid; grid-template-columns: 1.6fr 1fr 1fr 1fr; gap: 40px; padding-bottom: 56px; }
 .footer__brand .logo { height: 22px; margin-bottom: 20px; }
 .footer__brand p { color: var(--muted); font-size: 14px; }
+.social { display: flex; gap: 24px; margin-top: 20px; }
+.social a { display: inline-flex; color: #111111; transition: opacity 200ms; }
+.social a:hover { opacity: 0.6; }
 .footer h2 { font-size: 12px; letter-spacing: 0.18em; margin-bottom: 18px; font-family: var(--sans); font-weight: 600; }
 .footer li { margin-bottom: 10px; }
 .footer li a { font-size: 14px; color: var(--muted); text-decoration: none; }
