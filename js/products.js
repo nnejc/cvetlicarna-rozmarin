@@ -22,6 +22,45 @@ var SHIPPING = [
   { id: "gls", name: "GLS", note: "Dostava naslednji delovni dan", price: 4.9 }
 ];
 
+// Company details used in the footer, on the contact page and in the legal texts.
+// Placeholders in brackets stay visible until the real data is filled in.
+var COMPANY = {
+  name: "[Ime podjetja d.o.o.]",
+  address: "[Ulica 1, 2250 Ptuj]",
+  phone: "[+386 …]",
+  email: "info@aurelle.si",
+  vat: "[SI…]",
+  reg: "[matična št.]",
+  hours: "pon–pet 9–17"
+};
+
+// Gift wrap with a printed personal card (one fee per order).
+var GIFT = { price: 4.9 };
+
+// Delivery estimate: the parcel ships shipsInDays working days after the order and then
+// takes minDays–maxDays working days. Weekends are skipped.
+var DELIVERY = { shipsInDays: 1, minDays: 1, maxDays: 2 };
+
+// Christmas notice: shown from 1 December until lastOrderDate (inclusive).
+var CHRISTMAS = { lastOrderDate: "2026-12-19" };
+
+// Approximate bottle heights in cm for the size guide (placeholder values).
+var SIZE_INFO = { 30: { height: 9 }, 50: { height: 11 }, 100: { height: 13.5 } };
+
+// Customer reviews, keyed by product id. Leave empty until there are real reviews.
+// Example: REVIEWS["01"] = [{ name: "Ana", date: "2026-11-20", rating: 5, text: "…" }];
+var REVIEWS = {};
+
+// Answers of the "Najdi svojo dišavo" quiz are scored against product.tags:
+//   gender: "zanjo" | "zanj" | "unisex"
+//   occasion: "dan" | "vecer" | "poletje" | "zima"
+//   families: "cvetje" | "sadje" | "les-dim" | "sveze" | "zelena"
+//   intensity: "nezna" | "zmerna" | "mocna"
+// inci: example ingredient list incl. allergens (placeholder until the producer data arrives).
+
+// Returns policy shown on the product page (the same wording is used on vracila.html and in the FAQ).
+var RETURNS_TEXT = "Neodprt izdelek lahko vrnete v 14 dneh brez navedbe razloga. Ker parfuma ni mogoče povohati na spletu, vsakemu naročilu priložimo vzorec 2 ml: najprej preizkusi vzorec in šele nato odpri veliko steklenico – če ti dišava ni všeč, jo lahko neodprto vrneš.";
+
 // Optional extra item offered in the cart (no size selector).
 var SAMPLE_SET = {
   id: "set",
@@ -49,6 +88,8 @@ var PRODUCTS = [
     id: "01",
     longevity: "8+ ur",
     sillage: "zmerna",
+    tags: { gender: "zanjo", occasion: ["dan"], families: ["cvetje"], intensity: "nezna" },
+    inci: "Alcohol Denat., Parfum, Aqua, Limonene, Linalool, Citronellol, Geraniol, Citral, Hexyl Cinnamal, Benzyl Salicylate.",
     name: "Bela svila",
     gender: "zanjo",
     family: "Cvetlično pudrasta",
@@ -62,6 +103,8 @@ var PRODUCTS = [
     id: "02",
     longevity: "10+ ur",
     sillage: "močna",
+    tags: { gender: "zanj", occasion: ["vecer", "zima"], families: ["les-dim"], intensity: "mocna" },
+    inci: "Alcohol Denat., Parfum, Aqua, Limonene, Linalool, Coumarin, Eugenol, Isoeugenol, Benzyl Benzoate, Citral.",
     name: "Jantar & dim",
     gender: "zanj",
     family: "Ambrasto lesna",
@@ -74,6 +117,8 @@ var PRODUCTS = [
     id: "03",
     longevity: "6+ ur",
     sillage: "lahka",
+    tags: { gender: "unisex", occasion: ["dan", "poletje"], families: ["zelena", "sadje"], intensity: "nezna" },
+    inci: "Alcohol Denat., Parfum, Aqua, Limonene, Linalool, Citral, Coumarin, Hexyl Cinnamal, Benzyl Benzoate.",
     name: "Figa",
     gender: "unisex",
     family: "Zeleno lesna",
@@ -86,6 +131,8 @@ var PRODUCTS = [
     id: "04",
     longevity: "8+ ur",
     sillage: "zmerna",
+    tags: { gender: "zanjo", occasion: ["dan", "poletje"], families: ["cvetje", "sadje"], intensity: "zmerna" },
+    inci: "Alcohol Denat., Parfum, Aqua, Limonene, Linalool, Benzyl Salicylate, Benzyl Benzoate, Benzyl Alcohol, Farnesol, Coumarin.",
     name: "Zlati vrt",
     gender: "zanjo",
     family: "Cvetlično ambrasta",
@@ -98,6 +145,8 @@ var PRODUCTS = [
     id: "05",
     longevity: "6+ ur",
     sillage: "lahka",
+    tags: { gender: "unisex", occasion: ["poletje", "dan"], families: ["sveze"], intensity: "nezna" },
+    inci: "Alcohol Denat., Parfum, Aqua, Limonene, Linalool, Citral, Geraniol, Coumarin, Hexyl Cinnamal.",
     name: "Morska sol",
     gender: "unisex",
     family: "Sveže aromatična",
@@ -110,6 +159,8 @@ var PRODUCTS = [
     id: "06",
     longevity: "12+ ur",
     sillage: "močna",
+    tags: { gender: "zanj", occasion: ["vecer", "zima"], families: ["les-dim"], intensity: "mocna" },
+    inci: "Alcohol Denat., Parfum, Aqua, Limonene, Linalool, Citronellol, Geraniol, Eugenol, Isoeugenol, Coumarin, Cinnamyl Alcohol.",
     name: "Nočni oud",
     gender: "zanj",
     family: "Orientalsko lesna",
@@ -122,6 +173,8 @@ var PRODUCTS = [
     id: "07",
     longevity: "10+ ur",
     sillage: "močna",
+    tags: { gender: "zanjo", occasion: ["vecer", "zima"], families: ["cvetje", "sadje"], intensity: "mocna" },
+    inci: "Alcohol Denat., Parfum, Aqua, Citronellol, Geraniol, Linalool, Limonene, Eugenol, Benzyl Benzoate, Coumarin.",
     name: "Žametna vrtnica",
     gender: "zanjo",
     family: "Ambrasto cvetlična",
@@ -134,6 +187,8 @@ var PRODUCTS = [
     id: "08",
     longevity: "8+ ur",
     sillage: "zmerna",
+    tags: { gender: "zanjo", occasion: ["vecer", "zima"], families: ["sadje", "cvetje"], intensity: "zmerna" },
+    inci: "Alcohol Denat., Parfum, Aqua, Alpha-Isomethyl Ionone, Linalool, Limonene, Coumarin, Benzyl Salicylate, Hexyl Cinnamal.",
     name: "Divja sliva",
     gender: "zanjo",
     family: "Sadno pudrasta",
@@ -146,6 +201,8 @@ var PRODUCTS = [
     id: "09",
     longevity: "8+ ur",
     sillage: "zmerna",
+    tags: { gender: "zanj", occasion: ["vecer", "dan"], families: ["les-dim", "sveze"], intensity: "zmerna" },
+    inci: "Alcohol Denat., Parfum, Aqua, Limonene, Linalool, Geraniol, Citral, Citronellol, Alpha-Isomethyl Ionone, Coumarin.",
     name: "Polnoč",
     gender: "zanj",
     family: "Aromatično lesna",
@@ -158,6 +215,8 @@ var PRODUCTS = [
     id: "10",
     longevity: "7+ ur",
     sillage: "zmerna",
+    tags: { gender: "unisex", occasion: ["dan", "poletje"], families: ["zelena"], intensity: "zmerna" },
+    inci: "Alcohol Denat., Parfum, Aqua, Limonene, Linalool, Evernia Prunastri Extract, Citral, Geraniol, Coumarin, Eugenol.",
     name: "Smaragd",
     gender: "unisex",
     family: "Zeleno šipretna",

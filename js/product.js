@@ -36,6 +36,70 @@
     render(gallery);
   });
 
+  /* ---------- size guide: bottles drawn to scale (14 px per cm) ---------- */
+
+  var PX_CM = 14;
+  var BOTTLE_W_CM = { 30: 4.2, 50: 5, 100: 5.9 };
+
+  function cm(n) { return String(n).replace(".", ","); }
+
+  function sizeGuideSVG() {
+    var ground = 214, x = 14, out = "";
+    SIZES.forEach(function (sz) {
+      var h = SIZE_INFO[sz].height * PX_CM, w = BOTTLE_W_CM[sz] * PX_CM;
+      var capH = h * 0.2, capW = w * 0.46, bodyY = ground - h + capH, bodyH = h - capH;
+      var cx = x + w / 2;
+      out +=
+        '<g class="sg__item" data-size="' + sz + '">' +
+        '<rect class="sg__cap" x="' + (cx - capW / 2) + '" y="' + (ground - h) + '" width="' + capW + '" height="' + capH + '"/>' +
+        '<rect class="sg__body" x="' + x + '" y="' + bodyY + '" width="' + w + '" height="' + bodyH + '"/>' +
+        '<rect class="sg__liq" x="' + (x + w * 0.1) + '" y="' + (bodyY + bodyH * 0.1) + '" width="' + (w * 0.8) + '" height="' + (bodyH * 0.62) + '"/>' +
+        '<rect class="sg__label" x="' + (cx - w * 0.17) + '" y="' + (bodyY + bodyH * 0.26) + '" width="' + (w * 0.34) + '" height="' + (w * 0.34) + '"/>' +
+        '<text class="sg__txt" x="' + cx + '" y="' + (ground + 20) + '" text-anchor="middle">' + sz + " ml</text>" +
+        '<text class="sg__sub" x="' + cx + '" y="' + (ground + 35) + '" text-anchor="middle">' + cm(SIZE_INFO[sz].height) + " cm</text></g>";
+      x += w + 26;
+    });
+    var cardW = 5.4 * PX_CM, cardH = 8.56 * PX_CM;
+    out += '<g class="sg__ref"><rect x="' + x + '" y="' + (ground - cardH) + '" width="' + cardW + '" height="' + cardH + '" rx="3"/>' +
+      '<text class="sg__sub" x="' + (x + cardW / 2) + '" y="' + (ground + 20) + '" text-anchor="middle">kartica</text>' +
+      '<text class="sg__sub" x="' + (x + cardW / 2) + '" y="' + (ground + 35) + '" text-anchor="middle">8,6 cm</text></g>';
+    var width = x + cardW + 14;
+    return '<svg class="sg" viewBox="0 0 ' + Math.round(width) + ' 252" role="img" aria-label="Velikosti steklenic 30, 50 in 100 ml v primerjavi s kreditno kartico">' +
+      '<line class="sg__ground" x1="0" y1="' + ground + '" x2="' + Math.round(width) + '" y2="' + ground + '"/>' + out + "</svg>";
+  }
+
+  /* ---------- reviews ---------- */
+
+  function fmtReviewDate(iso) {
+    var m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso || "");
+    return m ? (+m[3]) + ". " + (+m[2]) + ". " + m[1] : "";
+  }
+
+  function reviewsHTML() {
+    var list = REVIEWS[p.id] || [];
+    var summary = S.ratingFor(p.id);
+    return (
+      '<section class="reviews" id="reviews" aria-labelledby="rev-title"><h2 id="rev-title">Mnenja</h2>' +
+      (list.length
+        ? '<p class="reviews__sum">' + S.ratingHTML(p.id) + "</p>" +
+          '<ul class="reviews__list">' + list.map(function (r) {
+            return '<li class="review"><p class="review__head"><span class="stars" aria-hidden="true">' + S.starsHTML(r.rating) + '</span><span class="sr-only">Ocena ' + r.rating + ' od 5</span> <strong>' + S.esc(r.name) + '</strong> <span class="muted">' + fmtReviewDate(r.date) + "</span></p>" +
+              "<p>" + S.esc(r.text) + "</p></li>";
+          }).join("") + "</ul>"
+        : '<p class="reviews__empty">Ta dišava še nima mnenj. Bodi prvi/a, ki jo oceni.</p>') +
+      '<button type="button" class="btn btn--outline" id="rev-open" aria-expanded="false" aria-controls="rev-form">Napiši mnenje</button>' +
+      '<form class="rform" id="rev-form" novalidate hidden>' +
+      '<fieldset class="rform__stars"><legend>Ocena</legend><div class="rform__row">' +
+      [1, 2, 3, 4, 5].map(function (n) {
+        return '<label class="rstar"><input type="radio" name="rating" value="' + n + '"><span class="sr-only">' + n + " od 5</span>" + S.starsHTML(0).split("</svg>")[0] + "</svg></label>";
+      }).join("") + '</div><p class="field__error" id="err-rating" hidden></p></fieldset>' +
+      '<div class="field"><label for="rev-name">Ime</label><input id="rev-name" name="name" type="text" autocomplete="given-name" aria-describedby="err-rev-name"><p class="field__error" id="err-rev-name" hidden></p></div>' +
+      '<div class="field"><label for="rev-text">Mnenje</label><textarea id="rev-text" name="text" rows="5" aria-describedby="err-rev-text"></textarea><p class="field__error" id="err-rev-text" hidden></p></div>' +
+      '<button type="submit" class="btn">Oddaj mnenje</button></form>' +
+      '<p class="reviews__thanks" id="rev-thanks" role="status"></p></section>'
+    );
+  }
+
   function render(gallery) {
     var rows = [["Vrh", p.notes.top], ["Srce", p.notes.heart], ["Baza", p.notes.base]];
     // Same gender first, then the rest; never the current product.
@@ -64,19 +128,26 @@
       '<div class="pdp__info">' +
       '<p class="eyebrow">' + S.esc(p.family) + " · " + S.GENDER_LABEL[p.gender] + "</p>" +
       '<h1 class="pdp__name">' + S.esc(p.name) + "</h1>" +
+      (S.ratingFor(p.id) ? '<p class="pdp__rating"><a href="#reviews">' + S.ratingHTML(p.id) + "</a></p>" : "") +
       '<p class="muted pdp__sub">Eau de Parfum · 18' + NBSP + "% dišavnih olj</p>" +
       '<p class="specs"><span><span class="specs__k">Obstojnost</span> ' + S.esc(p.longevity.replace(" ", NBSP)) + '</span><span class="specs__dot" aria-hidden="true">·</span><span><span class="specs__k">Sled</span> ' + S.esc(p.sillage) + "</span></p>" +
       '<div class="price price--lg" id="price" aria-live="polite">' + S.priceHTML(p, size) + "</div>" +
       '<p class="label">Velikost</p>' + S.sizesHTML(size, p.name) +
+      '<button type="button" class="sizelink" id="sg-open" aria-expanded="false" aria-controls="sg-panel">Kako velike so steklenice?</button>' +
+      '<div class="sizeguide" id="sg-panel" hidden>' + sizeGuideSVG() + '<p class="muted small">Višine so približne.</p></div>' +
       '<div class="buy"><div class="qty qty--lg" role="group" aria-label="Količina">' +
       '<button type="button" id="q-dec" aria-label="Zmanjšaj količino">−</button><span id="q-val" aria-live="polite">1</span>' +
       '<button type="button" id="q-inc" aria-label="Povečaj količino">+</button></div></div>' +
       '<button type="button" class="btn btn--full" id="add">V košarico</button>' +
+      '<p class="pdp__gift muted small">' + S.GIFT_ICON.replace('width="26" height="26"', 'width="20" height="20"') + "<span>Darilno pakiranje s kartico je na voljo v košarici.</span></p>" +
+      S.deliveryHTML() +
+      S.payBadgesHTML() +
       '<p class="muted small pdp__sample">Vzorec 2' + NBSP + "ml ob vsakem nakupu.</p>" +
       '<p class="pdp__desc">' + S.esc(p.description) + "</p>" +
       '<dl class="notes">' + rows.map(function (r) {
         return "<div><dt>" + r[0] + "</dt><dd>" + S.esc(r[1]) + "</dd></div>";
       }).join("") + "</dl>" +
+      '<p class="pdp__quiz"><a href="kviz.html">Nisi prepričan/a? Reši kviz v 30 sekundah →</a></p>' +
       '<div class="acc">' +
       '<details><summary>Kako se dišava razvija</summary><div class="pyramid-mini">' +
       '<div><h3>Vrh</h3><p class="muted">0–15' + NBSP + "min</p><p>Prvi vtis. Lahke, sveže note, ki se odprejo najprej.</p></div>" +
@@ -85,9 +156,10 @@
       '<details><summary>Opis izdelka</summary><div><p>Eau de Parfum, 18' + NBSP + "% dišavnih olj, izdelano v Sloveniji.</p>" +
       "<p>Družina: " + S.esc(p.family.toLowerCase()) + ". Na voljo v velikostih 30, 50 in 100" + NBSP + "ml.</p></div></details>" +
       '<details><summary>Dostava in vračila</summary><div><p>Dostava v 1–2 delovnih dneh. Brezplačna dostava nad ' + FREE_SHIPPING_FROM + NBSP + "€.</p>" +
-      "<p>Vračilo v 30 dneh po prejemu. Ob vsakem nakupu dodamo vzorec 2" + NBSP + "ml.</p></div></details>" +
-      '<details><summary>Sestavine</summary><div><p>Alcohol denat., parfum, aqua</p><p class="muted small">Popoln seznam sestavin in alergenov je naveden na embalaži.</p></div></details>' +
+      "<p>" + S.esc(RETURNS_TEXT) + "</p></div></details>" +
+      '<details><summary>Sestavine</summary><div><p>' + S.esc(p.inci) + '</p><p class="muted small">Primer seznama – točen seznam bo dodan ob prejemu podatkov proizvajalca.</p></div></details>' +
       "</div></div></div>" +
+      reviewsHTML() +
       '<section class="related" aria-labelledby="rel-title"><h2 id="rel-title">Morda ti bo všeč</h2><div class="grid" id="related"></div></section>' +
       '<div class="stickybuy" id="stickybuy" aria-hidden="true"><div class="stickybuy__info"><span class="stickybuy__price" id="sb-price"></span><span class="muted small" id="sb-size"></span></div>' +
       '<button type="button" class="btn" id="sb-add" tabindex="-1">V košarico</button></div>';
@@ -107,6 +179,22 @@
       size = s;
       S.swap(priceEl, S.priceHTML(p, size));
       syncSticky();
+      syncGuide();
+    });
+
+    // size guide panel: highlight the selected size
+    var sgPanel = document.getElementById("sg-panel");
+    function syncGuide() {
+      sgPanel.querySelectorAll(".sg__item").forEach(function (g) {
+        g.classList.toggle("is-selected", parseInt(g.getAttribute("data-size"), 10) === size);
+      });
+    }
+    syncGuide();
+    var sgBtn = document.getElementById("sg-open");
+    sgBtn.addEventListener("click", function () {
+      var open = sgPanel.hidden;
+      sgPanel.hidden = !open;
+      sgBtn.setAttribute("aria-expanded", open ? "true" : "false");
     });
 
     document.getElementById("q-dec").addEventListener("click", function () { qty = Math.max(1, qty - 1); qEl.textContent = qty; });
@@ -159,6 +247,40 @@
         document.getElementById("sb-add").tabIndex = show ? 0 : -1;
       }).observe(document.getElementById("add"));
     }
+
+    // review form (demo: nothing is stored or displayed)
+    var rForm = document.getElementById("rev-form");
+    var rOpen = document.getElementById("rev-open");
+    var rThanks = document.getElementById("rev-thanks");
+    rOpen.addEventListener("click", function () {
+      var open = rForm.hidden;
+      rForm.hidden = !open;
+      rOpen.setAttribute("aria-expanded", open ? "true" : "false");
+      if (open) rForm.querySelector("input[name=rating]").focus();
+    });
+    rForm.addEventListener("change", function (e) {
+      if (e.target.name !== "rating") return;
+      var v = parseInt(e.target.value, 10);
+      rForm.querySelectorAll(".rstar").forEach(function (l, i) { l.classList.toggle("is-on", i < v); });
+      showErr("rating", "");
+    });
+    function showErr(id, msg) {
+      var el = document.getElementById("err-" + id);
+      el.hidden = !msg; el.textContent = msg || "";
+      return !msg;
+    }
+    rForm.addEventListener("input", function (e) { if (e.target.name === "name") showErr("rev-name", ""); if (e.target.name === "text") showErr("rev-text", ""); });
+    rForm.addEventListener("submit", function (e) {
+      e.preventDefault();
+      var ok = true;
+      ok = showErr("rating", rForm.querySelector("input[name=rating]:checked") ? "" : "Izberite oceno.") && ok;
+      ok = showErr("rev-name", rForm.elements.name.value.trim() ? "" : "Vnesite ime.") && ok;
+      ok = showErr("rev-text", rForm.elements.text.value.trim() ? "" : "Napišite mnenje.") && ok;
+      if (!ok) return;
+      rForm.hidden = true;
+      rOpen.hidden = true;
+      rThanks.textContent = "Hvala! Mnenje bo objavljeno po pregledu.";
+    });
 
     var relEl = document.getElementById("related");
     related.forEach(function (r) { relEl.appendChild(S.createCard(r)); });

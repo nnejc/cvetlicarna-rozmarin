@@ -140,6 +140,7 @@
       '<div class="card__body">' +
       '<p class="eyebrow">' + esc(p.family) + "</p>" +
       '<h3 class="card__name"><a href="' + url + '">' + esc(p.name) + "</a></h3>" +
+      (ratingFor(p.id) ? '<p class="card__rating">' + ratingHTML(p.id) + "</p>" : "") +
       '<p class="card__notes">' + firstNotes(p).map(esc).join(" · ") + "</p>" +
       '<p class="card__price">' + fromPriceHTML(p) + "</p>" +
       "</div>";
@@ -162,21 +163,37 @@
 
   /* ---------- cart ---------- */
 
-  var cart = loadCart();
+  var cart = [];
+  var gift = { on: false, to: "", msg: "", from: "" };
+  var giftListeners = [];
+  var GIFT_MAX = { to: 40, msg: 220, from: 40 };
+  loadState();
 
-  function loadCart() {
+  // Storage format: { lines: [...], gift: {...} }. An older plain array of lines is still read.
+  function loadState() {
     try {
       var raw = JSON.parse(localStorage.getItem(CART_KEY));
-      if (!Array.isArray(raw)) return [];
-      return raw.filter(function (l) {
+      var lines = Array.isArray(raw) ? raw : (raw && raw.lines) || [];
+      cart = lines.filter(function (l) {
         if (l.id === SAMPLE_SET.id) return l.qty > 0;
         return find(l.id) && SIZES.indexOf(l.size) !== -1 && l.qty > 0;
       });
-    } catch (e) { return []; }
+      var g = (raw && !Array.isArray(raw) && raw.gift) || {};
+      gift = {
+        on: !!g.on,
+        to: String(g.to || "").slice(0, GIFT_MAX.to),
+        msg: String(g.msg || "").slice(0, GIFT_MAX.msg),
+        from: String(g.from || "").slice(0, GIFT_MAX.from)
+      };
+    } catch (e) { cart = []; }
+  }
+
+  function persist() {
+    try { localStorage.setItem(CART_KEY, JSON.stringify({ lines: cart, gift: gift })); } catch (e) { /* storage unavailable */ }
   }
 
   function saveCart() {
-    try { localStorage.setItem(CART_KEY, JSON.stringify(cart)); } catch (e) { /* storage unavailable */ }
+    persist();
     renderCart();
   }
 
@@ -240,6 +257,7 @@
 
   function clearCart() {
     cart = [];
+    gift = { on: false, to: "", msg: "", from: "" };
     saveCart();
   }
 
@@ -253,6 +271,204 @@
     );
   }
 
+  /* ---------- gift wrap + personal card ---------- */
+
+  function giftFee() {
+    return gift.on && cart.length ? GIFT.price : 0;
+  }
+
+  function giftInfo() {
+    return { on: gift.on && cart.length > 0, fee: giftFee(), to: gift.to, msg: gift.msg, from: gift.from };
+  }
+
+  function notifyGift() {
+    syncGiftEditors();
+    giftListeners.forEach(function (fn) { fn(); });
+  }
+
+  function setGiftOn(on) {
+    gift.on = !!on;
+    persist();
+    notifyGift();
+  }
+
+  function setGiftText(field, value) {
+    gift[field] = String(value).slice(0, GIFT_MAX[field]);
+    persist();
+    notifyGift();
+  }
+
+  var GIFT_ICON = '<svg width="26" height="26" viewBox="0 0 26 26" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="10" width="20" height="13"/><rect x="2" y="7" width="22" height="3.5"/><path d="M13 7v16M13 7c-1-4-6-4.5-6-2s4 2 6 2zM13 7c1-4 6-4.5 6-2s-4 2-6 2z"/></svg>';
+
+  // Checkbox row "Zapakiraj kot darilo" (cart drawer and checkout).
+  function giftToggleHTML(id) {
+    return (
+      '<div class="giftrow"><div class="giftrow__media media">' + GIFT_ICON + "</div>" +
+      '<label class="check"><input type="checkbox" id="' + id + '" data-gift-toggle' + (gift.on ? " checked" : "") + ">" +
+      "<span>Zapakiraj kot darilo (+" + money(GIFT.price) + ")</span></label></div>"
+    );
+  }
+
+  // Gift card editor: three fields with a live card preview next to them (below on phones).
+  function giftEditorHTML(prefix) {
+    return (
+      '<div class="gift" data-gift-editor>' +
+      '<div class="gift__fields">' +
+      '<div class="field"><label for="' + prefix + '-to">Za</label>' +
+      '<input id="' + prefix + '-to" type="text" maxlength="' + GIFT_MAX.to + '" placeholder="Draga Maja," autocomplete="off" data-gift-field="to"></div>' +
+      '<div class="field"><label for="' + prefix + '-msg">Sporočilo</label>' +
+      '<textarea id="' + prefix + '-msg" rows="5" maxlength="' + GIFT_MAX.msg + '" placeholder="Vse najboljše za rojstni dan. Naj te ta vonj spominja na najin poletni večer." data-gift-field="msg"></textarea>' +
+      '<p class="gift__count muted small" data-gift-count>0 / ' + GIFT_MAX.msg + "</p></div>" +
+      '<div class="field"><label for="' + prefix + '-from">Od</label>' +
+      '<input id="' + prefix + '-from" type="text" maxlength="' + GIFT_MAX.from + '" placeholder="Luka" autocomplete="off" data-gift-field="from"></div>' +
+      "</div>" +
+      '<div class="gift__preview">' +
+      '<div class="gcard" role="img" aria-label="Predogled darilne kartice">' + logoHTML("gcard__logo", 14) +
+      '<div class="gcard__body"><p class="gcard__to" data-gcard="to"></p><p class="gcard__msg" data-gcard="msg"></p><p class="gcard__from" data-gcard="from"></p></div></div>' +
+      '<p class="gift__note muted small">Kartico natisnemo na kakovosten papir in jo priložimo v darilno škatlo. Cen v paketu ne bo.</p>' +
+      "</div></div>"
+    );
+  }
+
+  var GIFT_PLACEHOLDER = { to: "Draga Maja,", msg: "Vse najboljše za rojstni dan. Naj te ta vonj spominja na najin poletni večer.", from: "Luka" };
+
+  // Scales the script text down until it fits inside the card.
+  function fitCard(card) {
+    var body = card.querySelector(".gcard__body");
+    var w = card.clientWidth;
+    if (!w) return;
+    var len = gift.msg.length;
+    var size = w * (len > 160 ? 0.07 : len > 100 ? 0.078 : 0.086);
+    var min = Math.max(9, w * 0.04);
+    body.style.fontSize = size + "px";
+    while (body.scrollHeight > body.clientHeight + 1 && size > min) {
+      size *= 0.94;
+      body.style.fontSize = size + "px";
+    }
+  }
+
+  function syncGiftEditors(source) {
+    document.querySelectorAll("[data-gift-editor]").forEach(function (root) {
+      ["to", "msg", "from"].forEach(function (f) {
+        var input = root.querySelector('[data-gift-field="' + f + '"]');
+        if (input !== source && input.value !== gift[f]) input.value = gift[f];
+        var out = root.querySelector('[data-gcard="' + f + '"]');
+        var empty = !gift[f].trim();
+        out.textContent = (f === "from" ? "— " : "") + (empty ? GIFT_PLACEHOLDER[f] : gift[f]);
+        out.classList.toggle("is-empty", empty);
+      });
+      root.querySelector("[data-gift-count]").textContent = gift.msg.length + " / " + GIFT_MAX.msg;
+      fitCard(root.querySelector(".gcard"));
+    });
+    document.querySelectorAll("[data-gift-toggle]").forEach(function (cb) { cb.checked = gift.on; });
+    document.querySelectorAll("[data-gift-panel]").forEach(function (panel) { panel.hidden = !gift.on; });
+    document.querySelectorAll("[data-gift-editor]").forEach(function (root) {
+      if (gift.on) fitCard(root.querySelector(".gcard"));
+    });
+  }
+
+  // Wires the toggle and fields inside root (delegated, safe to call once per container).
+  function bindGift(root) {
+    root.addEventListener("input", function (e) {
+      var f = e.target.getAttribute && e.target.getAttribute("data-gift-field");
+      if (f) { gift[f] = e.target.value.slice(0, GIFT_MAX[f]); persist(); syncGiftEditors(e.target); giftListeners.forEach(function (fn) { fn(); }); }
+    });
+    root.addEventListener("change", function (e) {
+      if (e.target.hasAttribute && e.target.hasAttribute("data-gift-toggle")) setGiftOn(e.target.checked);
+    });
+  }
+
+  /* ---------- delivery estimate, Christmas notice, payment badges, ratings ---------- */
+
+  var WEEKDAYS = ["ned", "pon", "tor", "sre", "čet", "pet", "sob"];
+
+  function addWorkingDays(date, n) {
+    var d = new Date(date.getTime());
+    while (n > 0) {
+      d.setDate(d.getDate() + 1);
+      var w = d.getDay();
+      if (w !== 0 && w !== 6) n--;
+    }
+    return d;
+  }
+
+  function fmtDate(d) {
+    return WEEKDAYS[d.getDay()] + ", " + d.getDate() + ". " + (d.getMonth() + 1) + ".";
+  }
+
+  // [earliest, latest] arrival date for an order placed at "now".
+  function deliveryDates(now) {
+    var ship = addWorkingDays(now || new Date(), DELIVERY.shipsInDays);
+    return [addWorkingDays(ship, DELIVERY.minDays), addWorkingDays(ship, DELIVERY.maxDays)];
+  }
+
+  function christmasEnd() {
+    var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec((CHRISTMAS && CHRISTMAS.lastOrderDate) || "");
+    return m ? new Date(+m[1], +m[2] - 1, +m[3], 23, 59, 59) : null;
+  }
+
+  function christmasActive(now) {
+    var end = christmasEnd();
+    if (!end) return false;
+    now = now || new Date();
+    return now >= new Date(end.getFullYear(), 11, 1) && now <= end;
+  }
+
+  function christmasText() {
+    var end = christmasEnd();
+    return "Naroči do " + end.getDate() + ". " + (end.getMonth() + 1) + ". in paket prispe pred božičem.";
+  }
+
+  function deliveryHTML() {
+    var d = deliveryDates();
+    return (
+      '<div class="delivery"><p>Naroči danes – prispe med <strong>' + fmtDate(d[0]).replace(/ /g, NBSP) + "</strong> in <strong>" + fmtDate(d[1]).replace(/ /g, NBSP) + "</strong></p>" +
+      (christmasActive() ? '<p class="delivery__xmas">' + christmasText() + "</p>" : "") + "</div>"
+    );
+  }
+
+  // Monochrome payment badges, inline SVG (no external requests).
+  var PAY_BADGES = [
+    ["Visa", 44, '<text x="22" y="18.5" text-anchor="middle" font-size="11" font-weight="700" font-style="italic" letter-spacing="0.6" fill="currentColor">VISA</text>'],
+    ["Mastercard", 44, '<circle cx="17.5" cy="14" r="6.5" fill="none" stroke="currentColor" stroke-width="1.1"/><circle cx="26.5" cy="14" r="6.5" fill="none" stroke="currentColor" stroke-width="1.1"/>'],
+    ["PayPal", 44, '<text x="22" y="17.5" text-anchor="middle" font-size="9" font-weight="700" fill="currentColor">PayPal</text>'],
+    ["Apple Pay", 44, '<text x="22" y="17" text-anchor="middle" font-size="7.5" font-weight="600" fill="currentColor">Apple Pay</text>'],
+    ["Google Pay", 44, '<text x="22" y="17" text-anchor="middle" font-size="7" font-weight="600" fill="currentColor">Google Pay</text>'],
+    ["Plačilo po povzetju", 64, '<text x="32" y="17" text-anchor="middle" font-size="8" font-weight="600" fill="currentColor">Po povzetju</text>']
+  ];
+
+  function payBadgesHTML() {
+    return '<ul class="pay" aria-label="Načini plačila">' + PAY_BADGES.map(function (b) {
+      return '<li><svg width="' + b[1] + '" height="28" viewBox="0 0 ' + b[1] + ' 28" role="img" aria-label="' + b[0] + '" font-family="Figtree, Arial, sans-serif">' +
+        '<rect x="0.5" y="0.5" width="' + (b[1] - 1) + '" height="27" rx="2" fill="none" stroke="currentColor"/>' + b[2] + "</svg></li>";
+    }).join("") + "</ul>";
+  }
+
+  function ratingFor(id) {
+    var r = REVIEWS[id];
+    if (!r || !r.length) return null;
+    var sum = r.reduce(function (a, x) { return a + x.rating; }, 0);
+    return { avg: sum / r.length, count: r.length };
+  }
+
+  function starsHTML(value) {
+    var out = "";
+    for (var i = 1; i <= 5; i++) {
+      out += '<svg width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.8l2.8 5.9 6.4.8-4.7 4.4 1.2 6.4L12 17.2 6.3 20.3l1.2-6.4L2.8 9.5l6.4-.8z" fill="' + (i <= Math.round(value) ? "currentColor" : "none") + '" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/></svg>';
+    }
+    return out;
+  }
+
+  // Average rating next to the product name / on cards. Empty when there are no real reviews.
+  function ratingHTML(id) {
+    var r = ratingFor(id);
+    if (!r) return "";
+    var avg = (Math.round(r.avg * 10) / 10).toFixed(1).replace(".", ",");
+    return '<span class="rating"><span class="stars" aria-hidden="true">' + starsHTML(r.avg) + "</span>" +
+      '<span class="sr-only">Ocena ' + avg + " od 5, " + r.count + " mnenj</span>" +
+      '<span aria-hidden="true">' + avg + ' <span class="muted">(' + r.count + ")</span></span></span>";
+  }
+
   /* ---------- chrome: announcement, header, mobile menu, drawer, footer ---------- */
 
   var drawer, overlay, mmenu, lastFocus;
@@ -262,11 +478,15 @@
   }
 
   function announceText() {
-    var free = "Brezplačna dostava nad 60" + NBSP + "€";
+    var free = "Brezplačna dostava nad " + FREE_SHIPPING_FROM + NBSP + "€";
+    var parts = [];
     if (PROMO && PROMO.active) {
-      return PROMO.label + " −" + PROMO.percent + NBSP + "% na vse dišave do " + (PROMO.until || "1. 12.").replace(/ /g, NBSP) + " · " + free;
+      parts.push(PROMO.label + " −" + PROMO.percent + NBSP + "% na vse dišave do " + (PROMO.until || "1. 12.").replace(/ /g, NBSP), free);
+    } else {
+      parts.push(free, "Vzorec 2" + NBSP + "ml ob vsakem nakupu");
     }
-    return free + " · Vzorec 2" + NBSP + "ml ob vsakem nakupu";
+    if (christmasActive()) parts.push(christmasText());
+    return parts.join(" · ");
   }
 
   var NAV_LINKS = [
@@ -276,10 +496,15 @@
     ["O nas", "o-nas.html", null]
   ];
 
-  function navLinks(extraClass) {
-    return NAV_LINKS.map(function (l) {
-      return '<a href="' + l[1] + '"' + (l[2] ? ' data-filter="' + l[2] + '"' : "") + (extraClass ? ' class="' + extraClass + '"' : "") + ">" + l[0] + "</a>";
-    }).join("");
+  // The quiz link sits on the right side of the desktop header and in the mobile menu.
+  var QUIZ_LINK = ["Najdi svojo dišavo", "kviz.html"];
+
+  function navLinks(withQuiz) {
+    var links = NAV_LINKS.map(function (l) {
+      return '<a href="' + l[1] + '"' + (l[2] ? ' data-filter="' + l[2] + '"' : "") + ">" + l[0] + "</a>";
+    });
+    if (withQuiz) links.splice(3, 0, '<a href="' + QUIZ_LINK[1] + '">' + QUIZ_LINK[0] + "</a>");
+    return links.join("");
   }
 
   // Footer social icons: inline SVG, URLs come from SOCIAL in products.js.
@@ -307,6 +532,7 @@
       '<nav class="nav" id="main-nav" aria-label="Glavna navigacija">' + navLinks() + "</nav></div>" +
       '<a class="header__logo" href="index.html" aria-label="AURELLE, domov">' + logoHTML("logo", 28) + "</a>" +
       '<div class="header__right">' +
+      '<a class="hlink" href="' + QUIZ_LINK[1] + '">' + QUIZ_LINK[0] + "</a>" +
       '<button type="button" class="hbtn" id="search-toggle" aria-expanded="false" aria-controls="search-panel" aria-label="Iskanje">' +
       '<svg width="19" height="19" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.2" aria-hidden="true"><circle cx="7.5" cy="7.5" r="5.5"/><path d="M11.6 11.6 16.5 16.5"/></svg></button>' +
       '<button type="button" class="hbtn hbtn--cart" id="cart-toggle" aria-controls="cart" aria-expanded="false">' +
@@ -322,7 +548,7 @@
       '<div class="mmenu" id="mobile-menu" role="dialog" aria-modal="true" aria-label="Meni" hidden>' +
       '<div class="mmenu__top">' + logoHTML("logo", 22) +
       '<button type="button" class="link-btn" id="menu-close">Zapri</button></div>' +
-      '<nav class="mmenu__nav" aria-label="Mobilna navigacija">' + navLinks() + "</nav></div>";
+      '<nav class="mmenu__nav" aria-label="Mobilna navigacija">' + navLinks(true) + "</nav></div>";
 
     var cartEl =
       '<div class="overlay" id="overlay"></div>' +
@@ -342,7 +568,8 @@
       '<li><a href="index.html#products" data-filter="all">Vse dišave</a></li>' +
       '<li><a href="index.html?spol=zanjo#products" data-filter="zanjo">Zanjo</a></li>' +
       '<li><a href="index.html?spol=zanj#products" data-filter="zanj">Zanj</a></li>' +
-      '<li><a href="index.html?spol=unisex#products" data-filter="unisex">Unisex</a></li></ul></nav>' +
+      '<li><a href="index.html?spol=unisex#products" data-filter="unisex">Unisex</a></li>' +
+      '<li><a href="kviz.html">Najdi svojo dišavo</a></li></ul></nav>' +
       '<nav aria-label="Pomoč"><h2>Pomoč</h2><ul>' +
       '<li><a href="dostava.html">Dostava</a></li><li><a href="vracila.html">Vračila</a></li>' +
       '<li><a href="pogosta-vprasanja.html">Pogosta vprašanja</a></li><li><a href="kontakt.html">Kontakt</a></li></ul></nav>' +
@@ -351,8 +578,8 @@
       '</ul></nav>' +
       "</div>" +
       '<div class="footer__meta">' +
-      '<p class="footer__pay">Visa · Mastercard · PayPal · Po povzetju · Bančno nakazilo</p>' +
-      '<p class="footer__legal">AURELLE · [ime podjetja d.o.o.] · [naslov] · ID za DDV: [SI…]</p></div>' +
+      payBadgesHTML().replace('class="pay"', 'class="pay footer__pay"') +
+      '<p class="footer__legal">AURELLE · ' + esc(COMPANY.name) + " · " + esc(COMPANY.address) + " · ID za DDV: " + esc(COMPANY.vat) + " · Matična št.: " + esc(COMPANY.reg) + "</p></div>" +
       '<p class="footer__copy">© 2026 AURELLE</p>' +
       "</div></footer>";
 
@@ -378,6 +605,25 @@
     }
   }
 
+  function renderCartFoot() {
+    var foot = document.getElementById("cart-foot");
+    if (!foot) return;
+    if (!cart.length) {
+      foot.innerHTML = '<a class="btn btn--outline btn--full" href="index.html#products" data-close-cart>Nadaljuj z nakupom</a>';
+      return;
+    }
+    var sub = subtotal();
+    var fee = giftFee();
+    foot.innerHTML =
+      '<div class="sum"><span>Vmesni seštevek</span><strong>' + money(sub) + "</strong></div>" +
+      (fee ? '<div class="sum"><span>Darilno pakiranje</span><span>' + money(fee) + "</span></div>" +
+        '<div class="sum sum--total"><span>Skupaj</span><strong>' + money(sub + fee) + "</strong></div>" : "") +
+      '<p class="muted small">Vzorec 2' + NBSP + "ml je dodan brezplačno. Dostava se izračuna na blagajni.</p>" +
+      deliveryHTML() +
+      '<a class="btn btn--full" href="checkout.html">Na blagajno</a>' +
+      payBadgesHTML();
+  }
+
   function renderCart() {
     var n = count();
     var countEl = document.getElementById("cart-count");
@@ -392,8 +638,6 @@
 
       if (!ls.length) {
         body.innerHTML = '<p class="drawer__empty">Košarica je prazna.</p>';
-        document.getElementById("cart-foot").innerHTML =
-          '<a class="btn btn--outline btn--full" href="index.html#products" data-close-cart>Nadaljuj z nakupom</a>';
       } else {
         body.innerHTML = '<ul class="lines">' + ls.map(function (l) {
           var name = l.href
@@ -416,14 +660,13 @@
         (hasSet() ? "" :
           '<div class="upsell"><div class="upsell__media media"><img src="' + esc(SAMPLE_SET.image) + '" alt="" loading="lazy"></div>' +
           '<p>Dodaj set vzorcev ' + SAMPLE_SET.detail.replace(" ml", NBSP + "ml") + " za " + money(SAMPLE_SET.price) + "</p>" +
-          '<button type="button" class="btn btn--outline btn--sm" data-add-set>Dodaj</button></div>');
-
-        document.getElementById("cart-foot").innerHTML =
-          '<div class="sum"><span>Vmesni seštevek</span><strong>' + money(sub) + "</strong></div>" +
-          '<p class="muted small">Vzorec 2' + NBSP + "ml je dodan brezplačno. Dostava se izračuna na blagajni.</p>" +
-          '<a class="btn btn--full" href="checkout.html">Na blagajno</a>';
+          '<button type="button" class="btn btn--outline btn--sm" data-add-set>Dodaj</button></div>') +
+          giftToggleHTML("gift-toggle-cart") +
+          '<div class="gift-panel" data-gift-panel' + (gift.on ? "" : " hidden") + ">" + giftEditorHTML("cg") + "</div>";
+        syncGiftEditors();
       }
     }
+    renderCartFoot();
     cartListeners.forEach(function (fn) { fn(); });
   }
 
@@ -500,6 +743,7 @@
     document.getElementById("cart-close").addEventListener("click", closeCart);
     overlay.addEventListener("click", closeCart);
 
+    bindGift(drawer);
     drawer.addEventListener("click", function (e) {
       if (e.target.closest("[data-close-cart]")) { closeCart(); return; }
       if (e.target.closest("[data-add-set]")) { addItem(SAMPLE_SET.id, 0, 1); return; }
@@ -520,7 +764,7 @@
       if (e.key === "Escape") { closeCart(); return; }
       if (e.key !== "Tab") return;
       // Keep keyboard focus inside the open drawer.
-      var f = drawer.querySelectorAll("a[href], button");
+      var f = drawer.querySelectorAll("a[href], button, input, textarea");
       if (!f.length) return;
       var first = f[0], last = f[f.length - 1];
       if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
@@ -538,7 +782,7 @@
       }
     });
     window.addEventListener("resize", function () {
-      if (window.innerWidth > 900 && !mmenu.hidden) {
+      if (window.innerWidth > 1200 && !mmenu.hidden) {
         mmenu.hidden = true; mmenu.classList.remove("is-open"); document.body.classList.remove("no-scroll");
       }
       clearTimeout(initChrome._t);
@@ -546,13 +790,20 @@
     });
 
     window.addEventListener("storage", function (e) {
-      if (e.key === CART_KEY) { cart = loadCart(); renderCart(); }
+      if (e.key === CART_KEY) { loadState(); renderCart(); }
     });
 
     initSearch();
     renderCart();
     fitAnnounce();
-    if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitAnnounce);
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { fitAnnounce(); syncGiftEditors(); });
+    window.addEventListener("resize", function () { syncGiftEditors(); });
+
+    // Fill [data-company="key"] placeholders on static pages with COMPANY values.
+    document.querySelectorAll("[data-company]").forEach(function (el) {
+      var v = COMPANY[el.getAttribute("data-company")];
+      if (v) el.textContent = v;
+    });
   }
 
   initChrome();
@@ -578,6 +829,22 @@
     unitHTML: unitHTML,
     subtotal: subtotal,
     shippingProgressHTML: shippingProgressHTML,
+    giftInfo: giftInfo,
+    giftToggleHTML: giftToggleHTML,
+    giftEditorHTML: giftEditorHTML,
+    bindGift: bindGift,
+    syncGiftEditors: syncGiftEditors,
+    onGiftChange: function (fn) { giftListeners.push(fn); },
+    deliveryHTML: deliveryHTML,
+    deliveryDates: deliveryDates,
+    fmtDate: fmtDate,
+    christmasActive: christmasActive,
+    christmasText: christmasText,
+    payBadgesHTML: payBadgesHTML,
+    ratingFor: ratingFor,
+    ratingHTML: ratingHTML,
+    starsHTML: starsHTML,
+    GIFT_ICON: GIFT_ICON,
     onCartChange: function (fn) { cartListeners.push(fn); }
   };
 })();

@@ -100,8 +100,9 @@
     el.className = "card tile tile--text";
     el.innerHTML =
       "<h3>Ne veš, katero izbrati?</h3>" +
-      "<p>Preizkusi več dišav doma in izberi svojo. Ob nakupu velike steklenice ti " + S.money(SAMPLE_SET.price) + " vrnemo v obliki popusta.</p>" +
-      '<button type="button" class="tile__link">Preizkusi set</button>';
+      "<p>Preizkusi več dišav doma in izberi svojo.</p>" +
+      '<a class="btn btn--sm tile__cta" href="kviz.html">Reši kviz</a>' +
+      '<button type="button" class="tile__link">ali preizkusi set</button>';
     el.querySelector(".tile__link").addEventListener("click", function () { S.addItem(SAMPLE_SET.id, 0, 1); });
     return el;
   }

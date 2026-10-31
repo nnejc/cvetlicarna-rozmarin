@@ -9,7 +9,7 @@
   <link rel="icon" href="images/favicon-32.png" sizes="32x32" type="image/png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:wght@400;500;600&family=Figtree:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:wght@400;500;600&family=Figtree:wght@400;500;600&family=Pinyon+Script&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/styles.css">
 </head>
 <body class="page-doc">
@@ -19,8 +19,13 @@
     <h1 class="doc__title">Kontakt</h1>
     <div class="doc__split doc__split--form">
       <div class="doc__body">
-        <p>Vprašanja o dišavah, naročilih ali vračilih pošljite na info@aurelle.si. Odgovorimo v enem delovnem dnevu.</p>
-        <p class="facts-line"><span class="muted">E-pošta</span><br>info@aurelle.si</p>
+        <p>Vprašanja o dišavah, naročilih ali vračilih nam pošljite po e-pošti ali pokličite. Na e-pošto odgovorimo v enem delovnem dnevu.</p>
+        <dl class="facts facts--contact">
+          <div><dt>E-pošta</dt><dd data-company="email"></dd></div>
+          <div><dt>Telefon</dt><dd data-company="phone"></dd></div>
+          <div><dt>Naslov</dt><dd><span data-company="name"></span><br><span data-company="address"></span></dd></div>
+          <div><dt>Delovni čas</dt><dd data-company="hours"></dd></div>
+        </dl>
       </div>
       <form class="co__form contact" id="contact" data-demo novalidate>
         <div class="fields">

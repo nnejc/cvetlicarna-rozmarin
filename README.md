@@ -27,6 +27,7 @@ js/home.js       hero slider, filter, novičnik
 js/product.js    stran izdelka
 js/checkout.js   blagajna
 js/page.js       kontaktni obrazec (demo)
+js/quiz.js       kviz Najdi svojo dišavo
 images/          vse slike
 ```
 
@@ -64,6 +65,21 @@ Z 10 izdelki in 2 ploščicama je mreža polna (3 vrstice po 4). Če dodate ali 
 ### Družbena omrežja
 
 Povezave za ikone Instagram, TikTok in Facebook v nogi so v `SOCIAL` na vrhu `js/products.js` (zdaj `#`).
+
+## Darilo, kviz, mnenja in drugo (vse v `js/products.js`)
+
+- **Darilno pakiranje:** `GIFT = { price: 4.9 }`. Možnost "Zapakiraj kot darilo" je v košarici in na blagajni (isto besedilo kartice v obeh), cena se prikaže kot ločena vrstica.
+  Možnost in besedilo kartice se shranita v `localStorage` skupaj s košarico. Pisava kartice (Pinyon Script) se naloži iz Google Fonts.
+- **Kviz "Najdi svojo dišavo"** (`kviz.html`): odgovori se točkujejo glede na `tags` pri vsakem izdelku (`gender`, `occasion`, `families`, `intensity`).
+  Pri novem izdelku obvezno izpolnite `tags`.
+- **Mnenja:** `REVIEWS = {}`. Prave ocene dodate kot `REVIEWS["01"] = [{ name: "Ana", date: "2026-11-20", rating: 5, text: "…" }];`.
+  Povprečna ocena se prikaže ob imenu izdelka in na kartici samo, če mnenja obstajajo. Obrazec za mnenje je demo in ničesar ne shrani.
+- **Podjetje:** `COMPANY` (ime, naslov, telefon, e-pošta, davčna, matična, delovni čas) se uporabi v nogi, na strani Kontakt ter v pogojih in zasebnosti. Besedila v oglatih oklepajih zamenjajte z resničnimi podatki.
+- **Sestavine:** `inci` pri vsakem izdelku je primer seznama, dokler ni podatkov proizvajalca.
+- **Dostava in božič:** `DELIVERY` (pošiljanje čez N delovnih dni, dostava min–max delovnih dni, vikendi se preskočijo) in `CHRISTMAS = { lastOrderDate: "2026-12-19" }`. Obvestilo o božiču se prikaže od 1. 12. do tega datuma.
+- **Velikosti steklenic:** `SIZE_INFO` (višina v cm, trenutno okvirne vrednosti).
+- **Vračila:** besedilo je v `RETURNS_TEXT` (stran izdelka); isto besedilo je ročno vneseno še na `vracila.html` in v pogostih vprašanjih.
+- `pogoji.html` in `zasebnost.html` sta **osnutka**: pred objavo ju mora pregledati pravni strokovnjak.
 
 ## Kako spremeniti cene
 

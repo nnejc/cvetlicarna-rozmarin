@@ -39,6 +39,18 @@
     }).join("");
   }
 
+  function giftLineHTML() {
+    var g = S.giftInfo();
+    if (!g.on) return "";
+    return (
+      '<li class="line line--sum"><div class="line__media media line__media--gift">' + S.GIFT_ICON + "</div>" +
+      '<div class="line__info"><p class="line__name">Darilno pakiranje s kartico</p>' +
+      (g.to.trim() ? '<p class="muted">Za: ' + S.esc(g.to.trim()) + "</p>" : "") + "</div>" +
+      '<p class="line__total">' + S.money(g.fee) + "</p></li>"
+    );
+  }
+
+  // Free delivery depends on the value of the products only (not on the gift fee).
   function free() { return S.subtotal() >= FREE_SHIPPING_FROM; }
 
   function renderShipping() {
@@ -55,11 +67,13 @@
     var sub = S.subtotal();
     var ship = SHIPPING.filter(function (s) { return s.id === selected; })[0];
     var shipCost = free() ? 0 : ship.price;
-    document.getElementById("sum-lines").innerHTML = summaryHTML();
+    var fee = S.giftInfo().fee;
+    document.getElementById("sum-lines").innerHTML = summaryHTML() + giftLineHTML();
     document.getElementById("totals").innerHTML =
       '<div class="sum"><span>Vmesni seštevek</span><span>' + S.money(sub) + "</span></div>" +
+      (fee ? '<div class="sum"><span>Darilno pakiranje</span><span>' + S.money(fee) + "</span></div>" : "") +
       '<div class="sum"><span>Dostava</span><span>' + (shipCost ? S.money(shipCost) : "Brezplačno") + "</span></div>" +
-      '<div class="sum sum--total"><span>Skupaj</span><strong>' + S.money(sub + shipCost) + "</strong></div>" +
+      '<div class="sum sum--total"><span>Skupaj</span><strong>' + S.money(sub + fee + shipCost) + "</strong></div>" +
       '<p class="muted small">Cena vključuje DDV.</p>';
   }
 
@@ -83,6 +97,10 @@
     root.innerHTML =
       '<h1 class="page-title">Blagajna</h1>' +
       '<p class="demo-note">Demo trgovina: naročila se ne oddajo in plačilo se ne izvede.</p>' +
+      '<div class="express"><p class="express__label">Hitro plačilo</p><div class="express__btns">' +
+      '<button type="button" class="btn express__btn" data-express>Apple Pay</button>' +
+      '<button type="button" class="btn express__btn" data-express>Google Pay</button></div>' +
+      '<p class="express__msg muted small" id="express-msg" role="status"></p></div>' +
       '<div class="co">' +
       '<form class="co__form" id="co-form" novalidate>' +
       '<fieldset><legend>Kontakt</legend><div class="fields">' +
@@ -95,12 +113,15 @@
       field("zip", "Poštna številka", { auto: "postal-code", inputmode: "numeric" }) + field("city", "Kraj", { auto: "address-level2" }) +
       '<div class="field field--wide"><label for="f-country">Država</label><select id="f-country" name="country" autocomplete="country-name"><option>Slovenija</option></select></div>' +
       "</div></fieldset>" +
+      '<fieldset class="gift-fieldset"><legend>Darilo</legend>' +
+      S.giftToggleHTML("gift-toggle-co") +
+      '<div class="gift-panel" data-gift-panel hidden>' + S.giftEditorHTML("cog") + "</div></fieldset>" +
       '<fieldset><legend>Dostava</legend><div class="choices" id="ship-choices"></div></fieldset>' +
       '<fieldset><legend>Plačilo</legend>' +
       '<p class="muted small">Plačilo je v demo različici le označevalec mesta. Podatkov kartice ne zbiramo.</p>' +
       '<div class="choices">' +
       '<label class="choice"><input type="radio" name="pay" value="card" checked><span>Plačilna kartica</span></label>' +
-      '<label class="choice"><input type="radio" name="pay" value="cod"><span>Plačilo po povzetju</span></label>' +
+      '<label class="choice"><input type="radio" name="pay" value="cod"><span>Plačilo po povzetju<small class="muted">Plačaš ob prevzemu paketa</small></span></label>' +
       '<label class="choice"><input type="radio" name="pay" value="bank"><span>Bančno nakazilo</span></label>' +
       "</div></fieldset>" +
       '<div class="terms"><label class="check"><input type="checkbox" id="f-terms" name="terms" aria-describedby="err-terms">' +
@@ -118,6 +139,13 @@
     renderTotals();
 
     var form = document.getElementById("co-form");
+    S.bindGift(form);
+    S.syncGiftEditors();
+    document.querySelectorAll("[data-express]").forEach(function (b) {
+      b.addEventListener("click", function () {
+        document.getElementById("express-msg").textContent = "Demo: hitro plačilo ni aktivno.";
+      });
+    });
     var submit = document.getElementById("co-submit");
     var terms = document.getElementById("f-terms");
 
@@ -156,6 +184,11 @@
       window.scrollTo(0, 0);
     });
   }
+
+  // Gift option or card text changed (here or in the cart drawer): refresh the summary.
+  S.onGiftChange(function () {
+    if (!done && document.getElementById("totals")) renderTotals();
+  });
 
   // Keep the order summary in sync when the cart drawer is used on this page.
   S.onCartChange(function () {
