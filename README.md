@@ -48,8 +48,18 @@ Odprite `js/products.js`. Vsak izdelek je en objekt v seznamu `PRODUCTS`:
 }
 ```
 
+Trenutno je v trgovini 10 dišav (`product-01.jpg` … `product-10.jpg`). Pri vsakem izdelku sta tudi `longevity` (obstojnost) in `sillage` (sled), ki se prikažeta pod imenom na strani izdelka.
+
 Nov izdelek dodate tako, da skopirate obstoječ objekt, spremenite `id` in vsebino ter dodate sliko v `images/`.
 Izdelek odstranite tako, da izbrišete njegov objekt.
+
+### Mreža izdelkov in dodatni ploščici
+
+Mreža ima na računalniku 4 stolpce, na tabličnem računalniku in telefonu 2. Ko je izbran filter "Vse", se za izdelki prikažeta še ploščica
+"Set vzorcev" in besedilna ploščica "Ne veš, katero izbrati?" (obe sta v `js/home.js`). Pri filtrih Zanjo, Zanj in Unisex se ne prikažeta.
+Z 10 izdelki in 2 ploščicama je mreža polna (3 vrstice po 4). Če dodate ali odstranite izdelke, preverite, da zadnja vrstica ni nepopolna.
+
+"Morda ti bo všeč" na strani izdelka prikaže 4 dišave: najprej iste vrste (zanjo / zanj / unisex), nato druge.
 
 ## Kako spremeniti cene
 

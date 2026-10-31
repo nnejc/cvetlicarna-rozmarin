@@ -38,9 +38,11 @@
 
   function render(gallery) {
     var rows = [["Vrh", p.notes.top], ["Srce", p.notes.heart], ["Baza", p.notes.base]];
-    var related = [];
-    var idx = PRODUCTS.indexOf(p);
-    for (var k = 1; related.length < 3 && k < PRODUCTS.length; k++) related.push(PRODUCTS[(idx + k) % PRODUCTS.length]);
+    // Same gender first, then the rest; never the current product.
+    var others = PRODUCTS.filter(function (x) { return x !== p; });
+    var related = others.filter(function (x) { return x.gender === p.gender; })
+      .concat(others.filter(function (x) { return x.gender !== p.gender; }))
+      .slice(0, 4);
     var multi = gallery.length > 1;
 
     root.innerHTML =

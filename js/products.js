@@ -114,6 +114,54 @@ var PRODUCTS = [
     description: "Temna, bogata in elegantna. Žafran in črni poper ji dasta začinjen, skrivnosten začetek, srce iz usnja in vrtnice pa globino in mehkobo hkrati. V bazi oud les in pačuli pustita dolgo, toplo sled, ki traja do jutra. Za posebne večere in tiste, ki se ne bojijo izstopati.",
     image: "images/product-06.jpg",
     prices: { 30: 39, 50: 59, 100: 89 }
+  },
+  {
+    id: "07",
+    longevity: "10+ ur",
+    sillage: "močna",
+    name: "Žametna vrtnica",
+    gender: "zanjo",
+    family: "Ambrasto cvetlična",
+    notes: { top: "malina, roza poper", heart: "turška vrtnica, geranija", base: "pačuli, vanilija" },
+    description: "Vrtnica, kot je še nisi vonjala. Sočna malina in roza poper ji dasta živahen začetek, turška vrtnica in geranija bogato, žametno srce. Pačuli in vanilija v bazi jo naredita toplo in zapeljivo. Za večere, ko želiš, da te opazijo.",
+    image: "images/product-07.jpg",
+    prices: { 30: 39, 50: 59, 100: 89 }
+  },
+  {
+    id: "08",
+    longevity: "8+ ur",
+    sillage: "zmerna",
+    name: "Divja sliva",
+    gender: "zanjo",
+    family: "Sadno pudrasta",
+    notes: { top: "sliva, črni ribez", heart: "vijolica, iris", base: "tonka, sandalovina" },
+    description: "Temna, sočna in skrivnostna. Zrela sliva in črni ribez se prelijeta v pudrasto vijolico in iris. Tonka in sandalovina pustita mehko, kremasto sled, ki traja vse do jutra.",
+    image: "images/product-08.jpg",
+    prices: { 30: 39, 50: 59, 100: 89 }
+  },
+  {
+    id: "09",
+    longevity: "8+ ur",
+    sillage: "zmerna",
+    name: "Polnoč",
+    gender: "zanj",
+    family: "Aromatično lesna",
+    notes: { top: "bergamotka, ingver", heart: "iris, geranija", base: "ambroksan, cedra" },
+    description: "Elegantna svežina za mestne noči. Bergamotka in ingver jo odpreta živahno, iris in geranija ji dasta čist, sodoben značaj. Ambroksan in cedra v bazi poskrbita za sled, ki je prisotna, a nikoli vsiljiva.",
+    image: "images/product-09.jpg",
+    prices: { 30: 39, 50: 59, 100: 89 }
+  },
+  {
+    id: "10",
+    longevity: "7+ ur",
+    sillage: "zmerna",
+    name: "Smaragd",
+    gender: "unisex",
+    family: "Zeleno šipretna",
+    notes: { top: "galbanum, bazilika", heart: "mate čaj, bor", base: "hrastov mah, mošus" },
+    description: "Gozd po dežju. Zelen galbanum in bazilika dišita sveže in drzno, mate čaj in bor ji dasta globino. Hrastov mah in mošus v bazi zaokrožita dišavo, ki jo nosita on in ona.",
+    image: "images/product-10.jpg",
+    prices: { 30: 39, 50: 59, 100: 89 }
   }
 ];
 

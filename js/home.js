@@ -77,6 +77,31 @@
   var tabs = document.querySelectorAll(".tab");
   var VALID = ["all", "zanjo", "zanj", "unisex"];
 
+  // Extra tiles shown after the products when the filter is "Vse".
+  function sampleTile() {
+    var el = document.createElement("article");
+    el.className = "card tile";
+    el.innerHTML =
+      '<div class="card__media media"><img class="card__img tile__img" src="' + S.esc(SAMPLE_SET.image) + '" alt="Steklenice dišav AURELLE v treh velikostih" width="800" height="800" loading="lazy" decoding="async"></div>' +
+      '<div class="card__body">' +
+      '<h3 class="card__name">Set vzorcev</h3>' +
+      '<p class="card__notes">6' + NBSP + "×" + NBSP + "2" + NBSP + "ml · " + S.money(SAMPLE_SET.price) + "</p>" +
+      '<button type="button" class="btn btn--full tile__btn">V košarico</button></div>';
+    el.querySelector(".tile__btn").addEventListener("click", function () { S.addItem(SAMPLE_SET.id, 0, 1); });
+    return el;
+  }
+
+  function textTile() {
+    var el = document.createElement("article");
+    el.className = "card tile tile--text";
+    el.innerHTML =
+      "<h3>Ne veš, katero izbrati?</h3>" +
+      "<p>Preizkusi več dišav doma in izberi svojo. Ob nakupu velike steklenice ti " + S.money(SAMPLE_SET.price) + " vrnemo v obliki popusta.</p>" +
+      '<button type="button" class="tile__link">Preizkusi set</button>';
+    el.querySelector(".tile__link").addEventListener("click", function () { S.addItem(SAMPLE_SET.id, 0, 1); });
+    return el;
+  }
+
   function setFilter(f, fromUser) {
     if (VALID.indexOf(f) === -1) f = "all";
     tabs.forEach(function (t) { t.setAttribute("aria-pressed", t.getAttribute("data-filter") === f ? "true" : "false"); });
@@ -85,6 +110,7 @@
       grid.innerHTML = "";
       PRODUCTS.filter(function (p) { return f === "all" || p.gender === f; })
         .forEach(function (p) { grid.appendChild(S.createCard(p)); });
+      if (f === "all") { grid.appendChild(sampleTile()); grid.appendChild(textTile()); }
       grid.classList.remove("is-swapping");
     }, fromUser && !S.reduceMotion ? 200 : 0);
     if (fromUser) {
