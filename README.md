@@ -65,12 +65,14 @@ Z 10 izdelki in 2 ploščicama je mreža polna (3 vrstice po 4). Če dodate ali 
 
 Vsak izdelek ima svoj `prices` objekt (cena v evrih za 30, 50 in 100 ml). Spremenite številke pri izdelku, ki ga želite.
 Cena na 100 ml se izračuna samodejno.
+Galerija na strani izdelka prikaže samo slike tega izdelka (pakshot, lifestyle, `secondImage`). Slika `sizes.jpg` je samo pri izdelku 01. Sličice in puščice se skrijejo, če je slika samo ena.
+
 Na karticah je prikazana najnižja cena ("od ..."), na strani izdelka pa cena izbrane velikosti.
 
 Pri akciji se cena zaokroži navzgor na najbližjih X,90 € (59 € → 41,90 €, 39 € → 27,90 €, 89 € → 62,90 €).
 Zaokroževanje je v funkciji `promoPrice` v `js/products.js` in velja povsod (kartice, stran izdelka, košarica, blagajna).
 
-Set vzorcev iz košarice je v `SAMPLE_SET` (cena, naziv, slika).
+Set vzorcev (10 × 2 ml, 24,90 €, slika `sample-set.jpg`) je v `SAMPLE_SET` v `js/products.js`. Cena in opis se spremenita samo tam.
 
 ### Akcija (Black Friday)
 
@@ -110,11 +112,10 @@ Za vsak diapozitiv lahko nastavite tudi `focus` (kateri del slike ostane viden n
 ## Slike
 
 Datoteke v `images/`: `logo-black.svg`, `favicon.svg`, `favicon-32.png`, `hero-blackfriday.jpg`, `hero-woman.jpg`, `hero-man.jpg`,
-`product-01.jpg` … `product-06.jpg`, `travertine.jpg`, `sizes.jpg`.
+`product-01.jpg` … `product-10.jpg`, `travertine.jpg`, `sizes.jpg`, `about.jpg` (4:5, razdelek O NAS), `sample-set.jpg` (set vzorcev).
 
 Neobvezne slike (če datoteke ni, se prostor tiho izpusti):
-- `about.jpg`: slika v razdelku O NAS (brez nje se uporabi izrez iz `hero-woman.jpg`).
-- `product-0X-lifestyle.jpg` (npr. `product-02-lifestyle.jpg`): slika ob prehodu z miško na kartici in v galeriji izdelka.
+- `product-XX-lifestyle.jpg` (npr. `product-02-lifestyle.jpg`, priporočeno 4:5): slika ob prehodu z miško na kartici in druga slika v galeriji izdelka. Prikaže se izrezana na sredino v kvadratnem okvirju. Če datoteke ni, ni zamenjave slike in ni praznih sličic.
 
 Ker brskalnik datoteke, ki je ni, javi kot 404, se lahko v konzoli ob prvem obisku pojavi nekaj takih opozoril za manjkajoče neobvezne slike. To ni napaka.
 

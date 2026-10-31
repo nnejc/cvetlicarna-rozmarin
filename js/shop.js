@@ -81,12 +81,12 @@
     );
   }
 
-  // Lowest price of a product ("od ...") shown on cards.
+  // Lowest price of a product ("od ...") shown on cards: struck regular price first, then the new one.
   function fromPriceHTML(p) {
     var pr = price(p, SIZES[0]);
-    var html = '<span class="card__now">od' + NBSP + money(pr.final) + "</span>";
-    if (pr.promo) html += ' <s class="card__old"><span class="sr-only">Redna cena </span>od' + NBSP + money(pr.base) + "</s>";
-    return html;
+    var html = "";
+    if (pr.promo) html += '<s class="card__old"><span class="sr-only">Redna cena </span>' + money(pr.base) + '</s><span class="sr-only"> Akcijska cena </span>';
+    return html + '<span class="card__now">od' + NBSP + money(pr.final) + "</span>";
   }
 
   // Fades the old content out, swaps it and fades it back in.
@@ -128,7 +128,6 @@
     var el = document.createElement("article");
     el.className = "card";
     var url = "product.html?id=" + p.id;
-    var altSrc = p.secondImage || lifestyleSrc(p);
     el.innerHTML =
       '<div class="card__media media">' +
       '<a class="card__link" href="' + url + '" tabindex="-1" aria-hidden="true">' +
@@ -143,13 +142,17 @@
       '<p class="card__price">' + fromPriceHTML(p) + "</p>" +
       "</div>";
     el.querySelector(".quick").addEventListener("click", function () { addItem(p.id, DEFAULT_SIZE, 1); });
-    // Hover image: secondImage, or the optional lifestyle image when that file exists.
-    probe(altSrc).then(function (ok) {
-      if (!ok) return;
+    // Hover image: product-XX-lifestyle.jpg if it exists, else secondImage. No file, no swap.
+    var lifestyle = lifestyleSrc(p);
+    probe(lifestyle).then(function (ok) {
+      if (ok) return lifestyle;
+      return p.secondImage ? probe(p.secondImage).then(function (has) { return has ? p.secondImage : null; }) : null;
+    }).then(function (src) {
+      if (!src) return;
       var img = new Image();
       img.className = "card__img card__img--alt";
       img.alt = ""; img.width = 800; img.height = 800; img.loading = "lazy"; img.decoding = "async";
-      img.src = altSrc;
+      img.src = src;
       el.querySelector(".card__link").appendChild(img);
     });
     return el;
@@ -190,9 +193,15 @@
         label: isSet ? SAMPLE_SET.detail.replace(" ml", NBSP + "ml") : l.size + NBSP + "ml",
         href: isSet ? null : "product.html?id=" + l.id,
         unit: unit,
+        oldUnit: !isSet && PROMO && PROMO.active ? p.prices[l.size] : null,
         total: Math.round(unit * l.qty * 100) / 100
       };
     });
+  }
+
+  // "<struck regular price> new price" for a cart line.
+  function unitHTML(l) {
+    return (l.oldUnit ? '<s class="line__old">' + money(l.oldUnit) + "</s> " : "") + money(l.unit);
   }
 
   function subtotal() {
@@ -322,8 +331,12 @@
       '<li><a href="dostava.html">Dostava</a></li><li><a href="vracila.html">Vračila</a></li>' +
       '<li><a href="pogosta-vprasanja.html">Pogosta vprašanja</a></li><li><a href="kontakt.html">Kontakt</a></li></ul></nav>' +
       '<nav aria-label="AURELLE"><h2>AURELLE</h2><ul>' +
-      '<li><a href="o-nas.html">O nas</a></li><li><a href="pogoji.html">Splošni pogoji</a></li><li><a href="zasebnost.html">Zasebnost</a></li></ul></nav>' +
+      '<li><a href="o-nas.html">O nas</a></li><li><a href="pogoji.html">Splošni pogoji</a></li><li><a href="zasebnost.html">Zasebnost</a></li>' +
+      '<li><a href="#">Instagram</a></li><li><a href="#">TikTok</a></li></ul></nav>' +
       "</div>" +
+      '<div class="footer__meta">' +
+      '<p class="footer__pay">Visa · Mastercard · PayPal · Po povzetju · Bančno nakazilo</p>' +
+      '<p class="footer__legal">AURELLE · [ime podjetja d.o.o.] · [naslov] · ID za DDV: [SI…]</p></div>' +
       '<p class="footer__copy">© 2026 AURELLE</p>' +
       "</div></footer>";
 
@@ -374,7 +387,7 @@
             '<li class="line" data-id="' + l.id + '" data-size="' + l.size + '">' +
             '<div class="line__media media"><img src="' + esc(l.p.image) + '" alt="" loading="lazy"></div>' +
             '<div class="line__info">' + name +
-            '<p class="muted">' + l.label + " · " + money(l.unit) + "</p>" +
+            '<p class="muted">' + l.label + " · " + unitHTML(l) + "</p>" +
             '<div class="line__ctrl">' +
             '<div class="qty" role="group" aria-label="Količina">' +
             '<button type="button" data-act="dec" aria-label="Zmanjšaj količino">−</button>' +
@@ -528,15 +541,6 @@
 
   initChrome();
 
-  // about.jpg is optional: the markup defaults to a crop of hero-woman.jpg.
-  var aboutImgs = document.querySelectorAll("img[data-about]");
-  if (aboutImgs.length) {
-    probe("images/about.jpg").then(function (ok) {
-      if (!ok) return;
-      aboutImgs.forEach(function (img) { img.src = "images/about.jpg"; img.classList.remove("is-crop"); });
-    });
-  }
-
   window.Shop = {
     NBSP: NBSP,
     reduceMotion: reduceMotion,
@@ -555,6 +559,7 @@
     addItem: addItem,
     clearCart: clearCart,
     lines: lines,
+    unitHTML: unitHTML,
     subtotal: subtotal,
     shippingProgressHTML: shippingProgressHTML,
     onCartChange: function (fn) { cartListeners.push(fn); }

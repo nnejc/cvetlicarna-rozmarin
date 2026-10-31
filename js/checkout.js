@@ -33,7 +33,7 @@
     return S.lines().map(function (l) {
       return (
         '<li class="line line--sum"><div class="line__media media"><img src="' + S.esc(l.p.image) + '" alt="" loading="lazy"></div>' +
-        '<div class="line__info"><p class="line__name">' + S.esc(l.p.name) + '</p><p class="muted">' + l.label + " · " + l.qty + NBSP + "×" + NBSP + S.money(l.unit) + "</p></div>" +
+        '<div class="line__info"><p class="line__name">' + S.esc(l.p.name) + '</p><p class="muted">' + l.label + " · " + l.qty + NBSP + "×" + NBSP + S.unitHTML(l) + "</p></div>" +
         '<p class="line__total">' + S.money(l.total) + "</p></li>"
       );
     }).join("");

@@ -80,14 +80,18 @@
   // Extra tiles shown after the products when the filter is "Vse".
   function sampleTile() {
     var el = document.createElement("article");
-    el.className = "card tile";
+    el.className = "card tile tile--sample";
     el.innerHTML =
-      '<div class="card__media media"><img class="card__img tile__img" src="' + S.esc(SAMPLE_SET.image) + '" alt="Steklenice dišav AURELLE v treh velikostih" width="800" height="800" loading="lazy" decoding="async"></div>' +
+      '<div class="card__media media">' +
+      '<img class="card__img" src="' + S.esc(SAMPLE_SET.image) + '" alt="Set za odkrivanje: 10 vzorcev dišav AURELLE v škatli" width="800" height="800" loading="lazy" decoding="async">' +
+      '<span class="quick" aria-hidden="true">Hitri nakup</span></div>' +
       '<div class="card__body">' +
-      '<h3 class="card__name">Set vzorcev</h3>' +
-      '<p class="card__notes">6' + NBSP + "×" + NBSP + "2" + NBSP + "ml · " + S.money(SAMPLE_SET.price) + "</p>" +
-      '<button type="button" class="btn btn--full tile__btn">V košarico</button></div>';
-    el.querySelector(".tile__btn").addEventListener("click", function () { S.addItem(SAMPLE_SET.id, 0, 1); });
+      '<p class="eyebrow">Set za odkrivanje</p>' +
+      '<h3 class="card__name"><button type="button" class="tile__name">Set vzorec</button></h3>' +
+      '<p class="card__notes">' + SAMPLE_SET.detail.replace(/ /g, NBSP) + "</p>" +
+      '<p class="card__price"><span class="card__now">' + S.money(SAMPLE_SET.price) + "</span></p></div>";
+    // The whole tile adds the set to the cart.
+    el.addEventListener("click", function () { S.addItem(SAMPLE_SET.id, 0, 1); });
     return el;
   }
 

@@ -24,15 +24,15 @@
   var size = DEFAULT_SIZE;
   var qty = 1;
 
-  // Optional images are only used when the file exists.
-  var optional = [];
+  // Only images that belong to this product: packshot, lifestyle (optional file),
+  // secondImage (optional) and, for the pink Bela svila only, the size comparison.
+  var optional = [{ src: S.lifestyleSrc(p), alt: "Dišava " + p.name + " v ambientu" }];
   if (p.secondImage) optional.push({ src: p.secondImage, alt: "Steklenica dišave " + p.name + " na kamniti plošči" });
-  optional.push({ src: S.lifestyleSrc(p), alt: "Dišava " + p.name + " v ambientu" });
 
   Promise.all(optional.map(function (o) { return S.probe(o.src); })).then(function (found) {
     var gallery = [{ src: p.image, alt: "Steklenica dišave " + p.name + ", AURELLE Eau de Parfum" }];
     optional.forEach(function (o, i) { if (found[i]) gallery.push(o); });
-    gallery.push({ src: "images/sizes.jpg", alt: "Steklenice AURELLE v velikostih 30, 50 in 100 ml, ena ob drugi" });
+    if (p.id === "01") gallery.push({ src: "images/sizes.jpg", alt: "Steklenice AURELLE v velikostih 30, 50 in 100 ml, ena ob drugi" });
     render(gallery);
   });
 
@@ -55,9 +55,12 @@
           '<button type="button" class="gal-arrow gal-arrow--next" data-dir="1" aria-label="Naslednja slika"><svg width="9" height="16" viewBox="0 0 9 16" fill="none" stroke="currentColor" stroke-width="1.2" aria-hidden="true"><path d="M1 1l6.5 7L1 15"/></svg></button>'
         : "") +
       "</div>" +
-      '<ul class="pdp__thumbs">' + gallery.map(function (g, i) {
-        return '<li><button type="button" class="thumb media" data-i="' + i + '" aria-label="Prikaži sliko ' + (i + 1) + ' od ' + gallery.length + '" aria-current="' + (i === 0) + '"><img src="' + S.esc(g.src) + '" alt="" loading="lazy"></button></li>';
-      }).join("") + "</ul></div>" +
+      (multi
+        ? '<ul class="pdp__thumbs">' + gallery.map(function (g, i) {
+            return '<li><button type="button" class="thumb media" data-i="' + i + '" aria-label="Prikaži sliko ' + (i + 1) + ' od ' + gallery.length + '" aria-current="' + (i === 0) + '"><img src="' + S.esc(g.src) + '" alt="" loading="lazy"></button></li>';
+          }).join("") + "</ul>"
+        : "") +
+      "</div>" +
       '<div class="pdp__info">' +
       '<p class="eyebrow">' + S.esc(p.family) + " · " + S.GENDER_LABEL[p.gender] + "</p>" +
       '<h1 class="pdp__name">' + S.esc(p.name) + "</h1>" +
@@ -126,10 +129,12 @@
         mainImg.classList.remove("is-swapping");
       }, S.reduceMotion ? 0 : 200);
     }
-    root.querySelector(".pdp__thumbs").addEventListener("click", function (e) {
-      var b = e.target.closest(".thumb");
-      if (b) go(parseInt(b.getAttribute("data-i"), 10));
-    });
+    if (multi) {
+      root.querySelector(".pdp__thumbs").addEventListener("click", function (e) {
+        var b = e.target.closest(".thumb");
+        if (b) go(parseInt(b.getAttribute("data-i"), 10));
+      });
+    }
     root.querySelectorAll(".gal-arrow").forEach(function (b) {
       b.addEventListener("click", function () { go(cur + parseInt(b.getAttribute("data-dir"), 10)); });
     });

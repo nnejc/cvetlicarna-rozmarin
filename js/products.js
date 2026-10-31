@@ -23,9 +23,9 @@ var SHIPPING = [
 var SAMPLE_SET = {
   id: "set",
   name: "Set vzorcev",
-  detail: "6 × 2 ml",
-  image: "images/sizes.jpg",
-  price: 19
+  detail: "10 × 2 ml",
+  image: "images/sample-set.jpg",
+  price: 24.9
 };
 
 // Promo price: base price minus PROMO.percent, rounded UP to the nearest X,90 EUR
