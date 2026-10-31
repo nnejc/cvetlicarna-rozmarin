@@ -87,7 +87,7 @@
       '<span class="quick" aria-hidden="true">Hitri nakup</span></div>' +
       '<div class="card__body">' +
       '<p class="eyebrow">Set za odkrivanje</p>' +
-      '<h3 class="card__name"><button type="button" class="tile__name">Set vzorec</button></h3>' +
+      '<h3 class="card__name"><button type="button" class="tile__name">Set vzorcev</button></h3>' +
       '<p class="card__notes">' + SAMPLE_SET.detail.replace(/ /g, NBSP) + "</p>" +
       '<p class="card__price"><span class="card__now">' + S.money(SAMPLE_SET.price) + "</span></p></div>";
     // The whole tile adds the set to the cart.

@@ -115,7 +115,7 @@ Datoteke v `images/`: `logo-black.svg`, `favicon.svg`, `favicon-32.png`, `hero-b
 `product-01.jpg` … `product-10.jpg`, `travertine.jpg`, `sizes.jpg`, `about.jpg` (4:5, razdelek O NAS), `sample-set.jpg` (set vzorcev).
 
 Neobvezne slike (če datoteke ni, se prostor tiho izpusti):
-- `product-XX-lifestyle.jpg` (npr. `product-02-lifestyle.jpg`, priporočeno 4:5): slika ob prehodu z miško na kartici in druga slika v galeriji izdelka. Prikaže se izrezana na sredino v kvadratnem okvirju. Če datoteke ni, ni zamenjave slike in ni praznih sličic.
+- `product-XX-lifestyle.jpg` (npr. `product-02-lifestyle.jpg`, priporočeno 4:5): slika ob prehodu z miško na kartici in druga slika v galeriji izdelka. Prikaže se izrezana na sredino v kvadratnem okvirju. Če datoteke ni, ni zamenjave slike in ni praznih sličic. Trenutno obstajajo `product-02-lifestyle.jpg` … `product-10-lifestyle.jpg`; izdelek 01 uporablja `travertine.jpg`.
 
 Ker brskalnik datoteke, ki je ni, javi kot 404, se lahko v konzoli ob prvem obisku pojavi nekaj takih opozoril za manjkajoče neobvezne slike. To ni napaka.
 

@@ -377,8 +377,9 @@ h2 { font-size: clamp(24px, 2.4vw, 34px); }
 .crumbs a:hover { color: var(--ink); text-decoration: underline; }
 
 .pdp { display: grid; grid-template-columns: 7fr 5fr; gap: clamp(40px, 6vw, 112px); align-items: start; padding-bottom: clamp(64px, 8vw, 120px); }
-.pdp__gallery { position: sticky; top: calc(var(--header-h) + 24px); }
-.pdp__main { aspect-ratio: 1; }
+/* Sticky on desktop; the main image is sized so image + thumbnails always fit the viewport. */
+.pdp__gallery { position: sticky; top: calc(var(--header-h) + 16px); }
+.pdp__main { aspect-ratio: 1; width: min(100%, max(360px, calc(100vh - var(--header-h) - 204px))); }
 .pdp__main img { transition: opacity 200ms; }
 .gal-arrow {
   position: absolute; top: 50%; transform: translateY(-50%); z-index: 2; width: 44px; height: 44px;
@@ -506,6 +507,7 @@ h2 { font-size: clamp(24px, 2.4vw, 34px); }
   .slide__copy { max-width: 46%; }
   .pdp, .co { grid-template-columns: 1fr; }
   .pdp__gallery, .co__sum { position: static; }
+  .pdp__main { width: 100%; }
   .pdp__info { max-width: none; }
   .footer__grid { grid-template-columns: 1fr 1fr; }
   .doc__split, .doc__split--form { grid-template-columns: 1fr; }
