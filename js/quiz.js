@@ -17,7 +17,7 @@
   ];
 
   var FAMILY_TEXT = { "cvetje": "cvetje", "sadje": "sadje in sladke vonje", "les-dim": "les, dim in začimbe", "sveze": "sveže in morske vonje", "zelena": "zeleno naravo" };
-  var WHEN_TEXT = { dan: "jo boš nosil/a vsak dan", vecer: "jo iščeš za večere in posebne priložnosti", poletje: "jo iščeš za poletje in dopust", zima: "jo iščeš za zimo" };
+  var WHEN_TEXT = { dan: "jo boš nosil{g} vsak dan", vecer: "jo iščeš za večere in posebne priložnosti", poletje: "jo iščeš za poletje in dopust", zima: "jo iščeš za zimo" };
   var POWER_TEXT = { nezna: "želiš nežno dišavo blizu kože", zmerna: "želiš zmerno močno dišavo", mocna: "želiš močnejšo dišavo" };
   var POWER_ORDER = ["nezna", "zmerna", "mocna"];
 
@@ -47,8 +47,13 @@
     var parts = [];
     if (answers.who === "dar-njej") parts.push("iščeš darilo za njo");
     if (answers.who === "dar-njemu") parts.push("iščeš darilo za njega");
-    if (r.why.fam.length) parts.push("imaš rad/a " + r.why.fam.map(function (f) { return FAMILY_TEXT[f]; }).join(" ter "));
-    if (r.why.when) parts.push(WHEN_TEXT[r.why.when]);
+    // Gender-correct Slovenian from question 1; "rad/a" only when the answer is "Vseeno mi je".
+    var male = answers.who === "zase-m" || answers.who === "dar-njemu";
+    var female = answers.who === "zase-z" || answers.who === "dar-njej";
+    var rad = male ? "rad" : female ? "rada" : "rad/a";
+    var g = male ? "" : female ? "a" : "/a";
+    if (r.why.fam.length) parts.push("imaš " + rad + " " + r.why.fam.map(function (f) { return FAMILY_TEXT[f]; }).join(" ter "));
+    if (r.why.when) parts.push(WHEN_TEXT[r.why.when].replace("{g}", g));
     if (r.why.power) parts.push(POWER_TEXT[r.why.power]);
     if (!parts.length) return "Ker se najbolje ujema z tvojimi odgovori.";
     var text = parts.length > 1 ? parts.slice(0, -1).join(", ") + " ter " + parts[parts.length - 1] : parts[0];

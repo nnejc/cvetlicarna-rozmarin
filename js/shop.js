@@ -289,6 +289,7 @@
   function setGiftOn(on) {
     gift.on = !!on;
     persist();
+    renderCartFoot();
     notifyGift();
   }
 
@@ -301,11 +302,13 @@
   var GIFT_ICON = '<svg width="26" height="26" viewBox="0 0 26 26" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="10" width="20" height="13"/><rect x="2" y="7" width="22" height="3.5"/><path d="M13 7v16M13 7c-1-4-6-4.5-6-2s4 2 6 2zM13 7c1-4 6-4.5 6-2s-4 2-6 2z"/></svg>';
 
   // Checkbox row "Zapakiraj kot darilo" (cart drawer and checkout).
-  function giftToggleHTML(id) {
+  function giftToggleHTML(id, withEditLink) {
     return (
       '<div class="giftrow"><div class="giftrow__media media">' + GIFT_ICON + "</div>" +
-      '<label class="check"><input type="checkbox" id="' + id + '" data-gift-toggle' + (gift.on ? " checked" : "") + ">" +
-      "<span>Zapakiraj kot darilo (+" + money(GIFT.price) + ")</span></label></div>"
+      '<div class="giftrow__text"><label class="check"><input type="checkbox" id="' + id + '" data-gift-toggle' + (gift.on ? " checked" : "") + ">" +
+      "<span>Zapakiraj kot darilo (+" + money(GIFT.price) + ")</span></label>" +
+      (withEditLink ? '<button type="button" class="link-btn giftedit" data-gift-edit' + (gift.on ? "" : " hidden") + ">Uredi kartico</button>" : "") +
+      "</div></div>"
     );
   }
 
@@ -362,6 +365,7 @@
     });
     document.querySelectorAll("[data-gift-toggle]").forEach(function (cb) { cb.checked = gift.on; });
     document.querySelectorAll("[data-gift-panel]").forEach(function (panel) { panel.hidden = !gift.on; });
+    document.querySelectorAll("[data-gift-edit]").forEach(function (b) { b.hidden = !gift.on; });
     document.querySelectorAll("[data-gift-editor]").forEach(function (root) {
       if (gift.on) fitCard(root.querySelector(".gcard"));
     });
@@ -427,20 +431,22 @@
     );
   }
 
-  // Monochrome payment badges, inline SVG (no external requests).
+  // Payment badges: 38 x 24 px inline SVG, no external requests.
+  var APPLE_MARK = '<path transform="translate(6.5 6) scale(0.5)" fill="#111111" d="M16.4 12.7c0-2.2 1.8-3.2 1.9-3.3-1-1.5-2.6-1.7-3.2-1.7-1.4-.1-2.6.8-3.3.8s-1.7-.8-2.8-.8c-1.4 0-2.8.9-3.5 2.1-1.5 2.6-.4 6.4 1.1 8.5.7 1 1.6 2.2 2.7 2.1 1.1 0 1.5-.7 2.8-.7s1.7.7 2.8.7c1.2 0 1.9-1 2.6-2.1.8-1.2 1.2-2.3 1.2-2.4-.1 0-2.3-.9-2.3-3.2zM14.3 6.3c.6-.7 1-1.7.9-2.7-.9 0-1.9.6-2.5 1.3-.5.6-1 1.6-.9 2.6 1 .1 1.9-.5 2.5-1.2z"/>';
   var PAY_BADGES = [
-    ["Visa", 44, '<text x="22" y="18.5" text-anchor="middle" font-size="11" font-weight="700" font-style="italic" letter-spacing="0.6" fill="currentColor">VISA</text>'],
-    ["Mastercard", 44, '<circle cx="17.5" cy="14" r="6.5" fill="none" stroke="currentColor" stroke-width="1.1"/><circle cx="26.5" cy="14" r="6.5" fill="none" stroke="currentColor" stroke-width="1.1"/>'],
-    ["PayPal", 44, '<text x="22" y="17.5" text-anchor="middle" font-size="9" font-weight="700" fill="currentColor">PayPal</text>'],
-    ["Apple Pay", 44, '<text x="22" y="17" text-anchor="middle" font-size="7.5" font-weight="600" fill="currentColor">Apple Pay</text>'],
-    ["Google Pay", 44, '<text x="22" y="17" text-anchor="middle" font-size="7" font-weight="600" fill="currentColor">Google Pay</text>'],
-    ["Plačilo po povzetju", 64, '<text x="32" y="17" text-anchor="middle" font-size="8" font-weight="600" fill="currentColor">Po povzetju</text>']
+    ["Visa", '<text x="19" y="16" text-anchor="middle" font-size="11" font-weight="800" font-style="italic" letter-spacing="0.3" fill="#1A1F71">VISA</text>'],
+    ["Mastercard", '<circle cx="15" cy="12" r="7" fill="#EB001B"/><circle cx="23" cy="12" r="7" fill="#F79E1B"/>' +
+      '<path d="M19 6.1A7 7 0 0 1 19 17.9A7 7 0 0 1 19 6.1Z" fill="#FF5F00"/>'],
+    ["PayPal", '<text x="19" y="15.5" text-anchor="middle" font-size="8.5" font-weight="800" font-style="italic"><tspan fill="#003087">Pay</tspan><tspan fill="#009CDE">Pal</tspan></text>'],
+    ["Apple Pay", APPLE_MARK + '<text x="16.5" y="15.8" font-size="8.5" font-weight="700" fill="#111111">Pay</text>'],
+    ["Google Pay", '<text x="6.5" y="16" font-size="10" font-weight="800" fill="#111111">G</text><text x="14.5" y="15.8" font-size="8.5" font-weight="700" fill="#111111">Pay</text>'],
+    ["Plačilo po povzetju", '<text x="19" y="10.5" text-anchor="middle" font-size="6.6" font-weight="600" fill="#6F6760">Po</text><text x="19" y="18" text-anchor="middle" font-size="6.6" font-weight="600" fill="#6F6760">povzetju</text>']
   ];
 
   function payBadgesHTML() {
     return '<ul class="pay" aria-label="Načini plačila">' + PAY_BADGES.map(function (b) {
-      return '<li><svg width="' + b[1] + '" height="28" viewBox="0 0 ' + b[1] + ' 28" role="img" aria-label="' + b[0] + '" font-family="Figtree, Arial, sans-serif">' +
-        '<rect x="0.5" y="0.5" width="' + (b[1] - 1) + '" height="27" rx="2" fill="none" stroke="currentColor"/>' + b[2] + "</svg></li>";
+      return '<li><svg width="38" height="24" viewBox="0 0 38 24" role="img" aria-label="' + b[0] + '" font-family="Figtree, Arial, sans-serif">' +
+        '<rect x="0.5" y="0.5" width="37" height="23" rx="4" fill="#FFFFFF" stroke="#E9DFD3"/>' + b[1] + "</svg></li>";
     }).join("") + "</ul>";
   }
 
@@ -550,6 +556,13 @@
       '<button type="button" class="link-btn" id="menu-close">Zapri</button></div>' +
       '<nav class="mmenu__nav" aria-label="Mobilna navigacija">' + navLinks(true) + "</nav></div>";
 
+    // Full-screen sheet with the card editor (used by the cart drawer on phones).
+    var sheet =
+      '<div class="gsheet" id="gift-sheet" role="dialog" aria-modal="true" aria-label="Darilna kartica" hidden>' +
+      '<div class="gsheet__top"><h2>Darilna kartica</h2><button type="button" class="link-btn" id="gift-sheet-close">Zapri</button></div>' +
+      '<div class="gsheet__body">' + giftEditorHTML("gs") + "</div>" +
+      '<div class="gsheet__foot"><button type="button" class="btn btn--full" id="gift-sheet-save">Shrani</button></div></div>';
+
     var cartEl =
       '<div class="overlay" id="overlay"></div>' +
       '<aside class="drawer" id="cart" role="dialog" aria-modal="true" aria-label="Košarica" aria-hidden="true">' +
@@ -584,7 +597,7 @@
       "</div></footer>";
 
     document.body.insertAdjacentHTML("afterbegin", head);
-    document.body.insertAdjacentHTML("beforeend", cartEl + foot);
+    document.body.insertAdjacentHTML("beforeend", cartEl + sheet + foot);
   }
 
   // Keeps the announcement on one line: marquee when it does not fit, ellipsis with reduced motion.
@@ -614,11 +627,13 @@
     }
     var sub = subtotal();
     var fee = giftFee();
+    // Desktop: subtotal, gift fee and total. Phones: one compact "Skupaj" line (foot__total-m).
     foot.innerHTML =
-      '<div class="sum"><span>Vmesni seštevek</span><strong>' + money(sub) + "</strong></div>" +
+      '<div class="foot__rows"><div class="sum"><span>Vmesni seštevek</span><strong>' + money(sub) + "</strong></div>" +
       (fee ? '<div class="sum"><span>Darilno pakiranje</span><span>' + money(fee) + "</span></div>" +
-        '<div class="sum sum--total"><span>Skupaj</span><strong>' + money(sub + fee) + "</strong></div>" : "") +
-      '<p class="muted small">Vzorec 2' + NBSP + "ml je dodan brezplačno. Dostava se izračuna na blagajni.</p>" +
+        '<div class="sum sum--total"><span>Skupaj</span><strong>' + money(sub + fee) + "</strong></div>" : "") + "</div>" +
+      '<div class="sum sum--total foot__total-m"><span>Skupaj</span><strong>' + money(sub + fee) + "</strong></div>" +
+      '<p class="muted small foot__note">Vzorec 2' + NBSP + "ml je dodan brezplačno. Dostava se izračuna na blagajni.</p>" +
       deliveryHTML() +
       '<a class="btn btn--full" href="checkout.html">Na blagajno</a>' +
       payBadgesHTML();
@@ -661,7 +676,7 @@
           '<div class="upsell"><div class="upsell__media media"><img src="' + esc(SAMPLE_SET.image) + '" alt="" loading="lazy"></div>' +
           '<p>Dodaj set vzorcev ' + SAMPLE_SET.detail.replace(" ml", NBSP + "ml") + " za " + money(SAMPLE_SET.price) + "</p>" +
           '<button type="button" class="btn btn--outline btn--sm" data-add-set>Dodaj</button></div>') +
-          giftToggleHTML("gift-toggle-cart") +
+          giftToggleHTML("gift-toggle-cart", true) +
           '<div class="gift-panel" data-gift-panel' + (gift.on ? "" : " hidden") + ">" + giftEditorHTML("cg") + "</div>";
         syncGiftEditors();
       }
@@ -744,9 +759,28 @@
     overlay.addEventListener("click", closeCart);
 
     bindGift(drawer);
+    var sheetEl = document.getElementById("gift-sheet");
+    bindGift(sheetEl);
+    function openSheet() {
+      sheetEl.hidden = false;
+      syncGiftEditors();
+      // Focus the title (not a field) so the large preview stays in view until the user taps a field.
+      var title = sheetEl.querySelector("h2");
+      title.setAttribute("tabindex", "-1");
+      title.focus();
+    }
+    function closeSheet() {
+      if (sheetEl.hidden) return;
+      sheetEl.hidden = true;
+      var edit = drawer.querySelector("[data-gift-edit]");
+      if (edit && !edit.hidden) edit.focus();
+    }
+    document.getElementById("gift-sheet-close").addEventListener("click", closeSheet);
+    document.getElementById("gift-sheet-save").addEventListener("click", closeSheet);
     drawer.addEventListener("click", function (e) {
       if (e.target.closest("[data-close-cart]")) { closeCart(); return; }
       if (e.target.closest("[data-add-set]")) { addItem(SAMPLE_SET.id, 0, 1); return; }
+      if (e.target.closest("[data-gift-edit]")) { openSheet(); return; }
       var btn = e.target.closest("[data-act]");
       if (!btn) return;
       var line = btn.closest(".line");
@@ -759,6 +793,7 @@
     });
 
     document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape" && !sheetEl.hidden) { closeSheet(); return; }
       if (e.key === "Escape" && !mmenu.hidden) { setMenu(false); return; }
       if (!drawer.classList.contains("is-open")) return;
       if (e.key === "Escape") { closeCart(); return; }
@@ -792,6 +827,15 @@
     window.addEventListener("storage", function (e) {
       if (e.key === CART_KEY) { loadState(); renderCart(); }
     });
+
+    // The gift card uses Pinyon Script: add the font link if a page lacks it, and load it early.
+    if (!document.querySelector('link[href*="Pinyon"]')) {
+      var fl = document.createElement("link");
+      fl.rel = "stylesheet";
+      fl.href = "https://fonts.googleapis.com/css2?family=Pinyon+Script&display=swap";
+      document.head.appendChild(fl);
+    }
+    if (document.fonts && document.fonts.load) document.fonts.load('16px "Pinyon Script"');
 
     initSearch();
     renderCart();
